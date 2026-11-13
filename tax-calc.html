@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>含税换算</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230A0A0A'/%3E%3Ccircle cx='50' cy='50' r='29.8' stroke='%23fff' stroke-width='4.9' fill='none'/%3E%3Cpath d='M41 59l18-18' stroke='%23fff' stroke-width='4.2' stroke-linecap='round'/%3E%3Ccircle cx='42' cy='42' r='2.6' fill='%23fff'/%3E%3Ccircle cx='58' cy='58' r='2.6' fill='%23fff'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<style>
+  :root{--ink:#0A0A0A;--ink2:#111;--soft:#6B6B6B;--faint:#A3A3A3;--paper:#FFF;--shell:#F7F7F7;--line:#E6E6E6;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  [hidden]{display:none!important;}
+  html,body{background:var(--paper);color:var(--ink);}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  button,textarea,input{font:inherit;color:inherit;}
+  .back{position:fixed;top:16px;left:18px;font-size:13px;color:var(--faint);text-decoration:none;padding:6px 8px;z-index:5;}
+  .back:hover{color:var(--ink);}
+  .wrap{max-width:760px;margin:0 auto;padding:64px 24px 56px;display:flex;flex-direction:column;gap:20px;}
+  header{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;margin-bottom:6px;}
+  .ring{width:50px;height:50px;}
+  h1{font-size:32px;font-weight:700;letter-spacing:3px;}
+  .desc{font-size:15px;color:var(--soft);max-width:420px;line-height:1.7;}
+  .card{border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--shell);min-height:48px;flex-wrap:wrap;}
+  .card-h>span{font-size:14px;font-weight:600;letter-spacing:.5px;}
+  textarea{display:block;width:100%;min-height:96px;border:0;outline:0;resize:vertical;padding:16px;font-size:22px;line-height:1.5;font-variant-numeric:tabular-nums;}
+  textarea::placeholder{color:var(--faint);font-size:16px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--paper);flex-wrap:wrap;}
+  .seg button{border:0;background:transparent;border-radius:999px;font-size:12.5px;padding:4px 14px;cursor:pointer;color:var(--soft);transition:all .15s;white-space:nowrap;}
+  .seg button.on{background:var(--ink2);color:#fff;}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;}
+  .rate{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--soft);}
+  .rate input{width:64px;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:14px;outline:0;text-align:right;}
+  .rate input:focus{border-color:var(--ink);}
+  .btn{font-size:13px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 16px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .btn:hover{border-color:var(--ink);}
+  .btn:active{transform:scale(.96);}
+  .btn.dark{background:var(--ink2);color:#fff;border-color:var(--ink2);}
+  .btn.ok{background:#fff;color:var(--ink);border-color:var(--ink);}
+  .res{display:flex;flex-direction:column;}
+  .r{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .r:last-child{border-bottom:0;}
+  .r.tot{background:var(--shell);}
+  .cells{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .cell{display:flex;flex-direction:column;gap:2px;min-width:0;border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;background:var(--paper);text-align:left;transition:border-color .15s;}
+  .cell:hover{border-color:var(--ink);}
+  .cell small{font-size:12px;color:var(--faint);}
+  .cell b{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;word-break:break-all;}
+  .cell.in{background:var(--shell);}
+  .rowtop{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--faint);}
+  .err{font-size:14px;color:var(--soft);}
+  .empty{padding:36px 16px;text-align:center;color:var(--faint);font-size:14px;}
+  .tip{font-size:12px;color:var(--faint);text-align:center;line-height:1.8;}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink2);color:#fff;font-size:13px;padding:10px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:all .25s;z-index:20;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  @media (max-width:560px){.cells{grid-template-columns:1fr}.wrap{padding:56px 16px 48px}}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">‹ 工具集</a>
+<div class="wrap">
+  <header>
+    <svg class="ring" viewBox="0 0 100 100" fill="none" aria-hidden="true"><circle cx="50" cy="50" r="29.8" stroke="currentColor" stroke-width="4.9"/><path d="M41 59l18-18" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/><circle cx="42" cy="42" r="2.6" fill="currentColor" stroke="currentColor"/><circle cx="58" cy="58" r="2.6" fill="currentColor" stroke="currentColor"/></svg>
+    <h1>含税换算</h1>
+    <p class="desc">含税与不含税互算,得出不含税额、税额、价税合计。每行一个金额可批量,点击数字即可复制。</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="mode"><button type="button" data-v="g2n" class="on">含税 → 不含税</button><button type="button" data-v="n2g">不含税 → 含税</button></div>
+  </div>
+  <div class="bar">
+    <div class="seg" id="rates"></div>
+    <label class="rate">自定义<input id="custom" type="text" inputmode="decimal" placeholder="如 4.5">%</label>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span id="inLabel">含税金额(价税合计)</span><button class="btn" id="clear" type="button">清空</button></div>
+    <textarea id="inp" placeholder="例如 11300,支持 ¥、逗号,每行一个" spellcheck="false" inputmode="decimal" autofocus></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span>换算结果</span><div style="display:flex;gap:8px"><button class="btn" id="cpTsv" type="button" hidden>复制全部(可粘贴到 Excel)</button></div></div>
+    <div class="res" id="res"><div class="empty">在上方输入金额</div></div>
+  </div>
+  <p class="tip">不含税额与税额均四舍五入到分,保证 不含税额 + 税额 = 价税合计。<br>实际开票金额、尾差处理请以开票系统及当地税务口径为准。</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const PRESETS = [13, 9, 6, 5, 3, 1, 0];
+let mode = 'g2n', rate = 13;                       // rate:百分数
+const rb = $('rates');
+PRESETS.forEach(v => { const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = v + '%'; b.onclick = () => { rate = v; $('custom').value = ''; sync(); render(); }; rb.appendChild(b); });
+function sync(){ [...rb.children].forEach(b => b.classList.toggle('on', !$('custom').value && +b.dataset.v === rate)); }
+
+function parseAmt(raw){
+  const s = raw.trim().replace(/[¥￥,，\s]/g, '').replace(/元$/, '');
+  if (!s) return null;
+  let neg = false, t = s;
+  if (/^[-−]/.test(t)) { neg = true; t = t.slice(1); }
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(t)) throw new Error('不是有效的金额');
+  const [ip = '0', fp = ''] = t.split('.');
+  let c = BigInt(ip || '0') * 100n + BigInt((fp + '00').slice(0, 2));
+  if (fp.length > 2 && fp[2] >= '5') c += 1n;
+  return neg ? -c : c;
+}
+const rdiv = (num, den) => { const neg = (num < 0n) !== (den < 0n), a = num < 0n ? -num : num, d = den < 0n ? -den : den, q = (a * 2n + d) / (2n * d); return neg ? -q : q; };  // 四舍五入(远离零)
+function rateBp(){
+  const cv = $('custom').value.trim();
+  if (cv) { if (!/^\d+(\.\d{1,2})?$/.test(cv)) throw new Error('自定义税率格式不对'); const [i, f = ''] = cv.split('.'); return BigInt(i) * 100n + BigInt((f + '00').slice(0, 2)); }
+  return BigInt(rate) * 100n;
+}
+function calc(c, R){                                // 返回 {net,tax,gross}(分)
+  if (mode === 'g2n') { const net = rdiv(c * 10000n, 10000n + R); return { net, tax: c - net, gross: c }; }
+  const tax = rdiv(c * R, 10000n); return { net: c, tax, gross: c + tax };
+}
+const fmt = c => { const neg = c < 0n, a = neg ? -c : c; return (neg ? '-' : '') + (a / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + String(a % 100n).padStart(2, '0'); };
+const plain = c => fmt(c).replace(/,/g, '');
+let rows = [];
+function render(){
+  const box = $('res'); box.innerHTML = ''; rows = [];
+  let R; try { R = rateBp(); } catch(e) { box.innerHTML = '<div class="empty"></div>'; box.firstChild.textContent = e.message; $('cpTsv').hidden = true; return; }
+  const lines = $('inp').value.split('\n'); let sum = { net: 0n, tax: 0n, gross: 0n }, n = 0;
+  lines.forEach(ln => {
+    if (!ln.trim()) return;
+    let v, err; try { v = parseAmt(ln); } catch(e) { err = e.message; }
+    if (v == null && !err) return;
+    const r = document.createElement('div'); r.className = 'r';
+    if (err) { r.innerHTML = '<div class="err"></div>'; r.firstChild.textContent = ln.trim() + ' —— ' + err; box.appendChild(r); return; }
+    const o = calc(v, R); rows.push(o); n++; sum.net += o.net; sum.tax += o.tax; sum.gross += o.gross;
+    box.appendChild(rowEl(o, mode === 'g2n' ? 'gross' : 'net', false, n));
+  });
+  if (n >= 2) box.appendChild(rowEl(sum, null, true, n));
+  if (!box.children.length) box.innerHTML = '<div class="empty">在上方输入金额</div>';
+  $('cpTsv').hidden = n < 1;
+  $('cpTsv')._rows = rows;
+}
+function rowEl(o, inKey, total, n){
+  const r = document.createElement('div'); r.className = 'r' + (total ? ' tot' : '');
+  const top = document.createElement('div'); top.className = 'rowtop'; top.textContent = total ? `合计(${n} 条)` : `第 ${n} 条 · 税率 ${(Number(rateBp()) / 100)}%`;
+  const cells = document.createElement('div'); cells.className = 'cells';
+  [['net', '不含税额'], ['tax', '税额'], ['gross', '价税合计']].forEach(([k, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cell' + (k === inKey ? ' in' : '');
+    b.innerHTML = '<small></small><b></b>'; b.firstChild.textContent = label + (k === inKey ? '(输入)' : ''); b.lastChild.textContent = fmt(o[k]);
+    b.onclick = () => copy(plain(o[k]), b); cells.appendChild(b);
+  });
+  r.append(top, cells); return r;
+}
+let tt;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1500); }
+async function copy(text, btn){
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch(e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;left:-999px'; document.body.appendChild(ta); ta.select(); try { ok = document.execCommand('copy'); } catch(_) {} ta.remove(); }
+  toast(ok ? '已复制:' + (text.length > 24 ? text.slice(0, 24) + '…' : text.replace(/\t/g, ' ')) : '复制失败,请手动复制');
+}
+$('mode').onclick = e => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.v; [...$('mode').children].forEach(x => x.classList.toggle('on', x === b)); $('inLabel').textContent = mode === 'g2n' ? '含税金额(价税合计)' : '不含税金额'; render(); };
+$('inp').addEventListener('input', render);
+$('custom').addEventListener('input', () => { sync(); render(); });
+$('clear').onclick = () => { $('inp').value = ''; render(); $('inp').focus(); };
+$('cpTsv').onclick = () => copy(['不含税额\t税额\t价税合计'].concat(rows.map(o => [plain(o.net), plain(o.tax), plain(o.gross)].join('\t'))).join('\n'), $('cpTsv'));
+window.__tax = { setMode: m => { mode = m; }, calc, parseAmt, fmt };
+sync(); render();
+})();
+</script>
+</body>
+</html>

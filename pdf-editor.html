@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 编辑</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMEEwQTBBIi8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMjkuOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjQuOSIvPgogIDxwYXRoIGQ9Ik00MyAzOC41SDU3TTQzIDYxLjVINTdNNTAgMzguNVY2MS41IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iNC45IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #ffffff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #111111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .app {
+      max-width: 1200px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
+    }
+
+    h1 {
+      font-weight: 500;
+      font-size: 1.8rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+      color: #000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark { width: 48px; height: 48px; color: #0A0A0A; flex-shrink: 0; margin: -6px 0 -6px -6px; }
+
+    /* ===== 首页（尺寸与盖盖首页一致）===== */
+    .landing-page { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; min-height: calc(100vh - 4rem); padding: 48px 24px; text-align: center; }
+    body.landing .landing-page { display: flex; }
+    body.landing .app { display: none; }
+    .landing-mark { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .landing-logo { width: 50px; height: 50px; color: #0A0A0A; }
+    .landing-title { font-size: 32px; font-weight: 700; letter-spacing: 3px; color: #0A0A0A; margin: 0; display: block; }
+    .landing-desc { font-size: 15px; line-height: 25.5px; color: #6b6b6b; max-width: 360px; margin: 0; }
+    .landing-btn {
+      background: #111; color: #fff; padding: 14px 36px; border-radius: 999px;
+      font-size: 15px; font-weight: 600; letter-spacing: 1px; cursor: pointer;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16); transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .landing-btn:hover { background: #2a2a2a; transform: translateY(-1px); }
+    .landing-link { font-size: 12.5px; color: #a3a3a3; text-decoration: underline; cursor: pointer; padding: 4px; margin-top: 2px; }
+    .landing-link:hover { color: #6b6b6b; }
+
+    h1 span {
+      font-weight: 300;
+      font-size: 1rem;
+      color: #555;
+      border-left: 1px solid #ccc;
+      padding-left: 12px;
+      margin-left: 8px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1.75rem 0 1.5rem 0;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #ececec;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .file-upload {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .file-upload label.pill {
+      background: #111;
+      color: #fff;
+      padding: 0.65rem 1.4rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      border: 1px solid #111;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .file-upload label.pill:hover { background: #2a2a2a; border-color: #2a2a2a; }
+    .file-upload label.pill.ghost { background: #fff; color: #111; }
+    .file-upload label.pill.ghost:hover { background: #f4f4f4; border-color: #111; }
+    .file-upload input[type=file] { display: none; }
+
+    .font-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .font-selector > span { font-size: 0.9rem; color: #444; white-space: nowrap; }
+
+    select {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 40px;
+      padding: 0.6rem 2.5rem 0.6rem 1.2rem;
+      font-size: 0.9rem;
+      color: #111;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      min-width: 190px;
+    }
+
+    select:hover:not(:disabled) { border-color: #999; }
+    select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .size-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .size-control > span {
+      font-size: 0.9rem;
+      color: #444;
+      white-space: nowrap;
+    }
+
+    .size-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 150px;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .size-slider:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .size-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #111;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #111;
+    }
+    .size-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+    .size-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: #111;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #111;
+    }
+    .size-slider::-moz-range-track { background: #e0e0e0; height: 4px; border-radius: 2px; }
+
+    .size-input {
+      width: 60px;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      text-align: center;
+      outline: none;
+      color: #111;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      font-variant-numeric: tabular-nums;
+    }
+    .size-input:focus { border-color: #111; }
+    .size-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .tgl {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #111;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+    .tgl:hover:not(:disabled) { border-color: #111; }
+    .tgl.on { background: #111; color: #fff; border-color: #111; }
+    .tgl:disabled { opacity: 0.4; cursor: not-allowed; }
+    .tgl.b { font-weight: 700; }
+    .tgl.i { font-style: italic; }
+
+    .color-wrap { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #444; }
+    input[type=color] {
+      width: 34px; height: 34px; padding: 2px;
+      border: 1px solid #ccc; border-radius: 50%;
+      background: #fff; cursor: pointer;
+    }
+    input[type=color]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: #111;
+      font-size: 0.82rem;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 4px 2px;
+      font-family: inherit;
+    }
+    .link-btn:disabled { opacity: 0.35; cursor: not-allowed; text-decoration: none; }
+
+    .style-info {
+      font-size: 0.8rem;
+      color: #666;
+      flex: 1 1 260px;
+      min-width: 220px;
+    }
+
+    .preview-area {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin: 1.5rem 0;
+      max-height: 62vh;
+      overflow: auto;
+      padding: 8px;
+      border: 1px dashed #eee;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .page-container {
+      position: relative;
+      border: 1px solid #eaeaea;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      margin: 0 auto;
+      flex-shrink: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .pdf-page-canvas { display: block; }
+
+    .text-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .guide-line {
+      position: absolute;
+      z-index: 9999;
+      pointer-events: none;
+      display: none;
+    }
+    .guide-line-horizontal { height: 0; left: 0; right: 0; border-top: 1px dashed rgba(0,0,0,0.55); }
+    .guide-line-vertical { width: 0; border-left: 1px dashed rgba(0,0,0,0.55); }
+
+    .hover-box {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      display: none;
+      outline: 1px dashed rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    /* 被替换的原文：用采样到的背景色盖住，预览即所见 */
+    .cover {
+      position: absolute;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .text-item-wrapper {
+      position: absolute;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    /* 文字框本身不带内边距/边框，保证文字落点与 PDF 导出完全一致 */
+    .text-item {
+      display: block;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: transparent;
+      cursor: text;
+      line-height: 1.25;
+      white-space: pre;
+      min-width: 0.6em;
+      min-height: 1.25em;
+      color: #000;
+      outline: 1px dashed rgba(0, 0, 0, 0.28);
+      outline-offset: 1px;
+      user-select: text;
+      -webkit-user-select: text;
+      caret-color: #000;
+      transition: outline-color 0.15s;
+    }
+    .text-item-wrapper:hover .text-item { outline-color: rgba(0, 0, 0, 0.6); }
+    .text-item:focus { outline: 1.5px solid #111; }
+    .text-item-wrapper.selected .text-item { outline: 1.5px solid #111; }
+
+    .text-item:empty:before {
+      content: '输入文字';
+      color: #bbb;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .item-toolbar {
+      position: absolute;
+      left: 0;
+      bottom: 100%;
+      display: none;
+      gap: 3px;
+      padding-bottom: 3px;
+      z-index: 20;
+    }
+    .item-toolbar.below { bottom: auto; top: 100%; padding: 3px 0 0 0; }
+    .text-item-wrapper:hover .item-toolbar,
+    .text-item-wrapper:focus-within .item-toolbar,
+    .text-item-wrapper.selected .item-toolbar { display: flex; }
+
+    .drag-handle {
+      cursor: move;
+      width: 18px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      color: #fff;
+      border-radius: 3px;
+      font-size: 10px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      opacity: 0.85;
+    }
+    .drag-handle:hover { opacity: 1; }
+
+    .delete-btn {
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: #111;
+      border: 1px solid #111;
+      border-radius: 3px;
+      font-size: 13px;
+      font-weight: bold;
+      user-select: none;
+      -webkit-user-select: none;
+      line-height: 1;
+    }
+    .delete-btn:hover { background: #111; color: #fff; }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #ececec;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn {
+      background: #fff;
+      border: 1px solid #111;
+      border-radius: 40px;
+      padding: 0.7rem 2rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #111;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-primary { background: #111; color: #fff; border-color: #111; }
+    .btn-primary:hover { background: #2a2a2a; border-color: #2a2a2a; }
+    .btn:hover { background: #f7f7f7; }
+    .btn:disabled { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
+
+    .status-message { font-size: 0.85rem; color: #555; margin-left: 8px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.8;
+      border: 1px dashed #ddd;
+      border-radius: 20px;
+      background: #fafafa;
+    }
+
+    .preview-area::-webkit-scrollbar { width: 6px; height: 6px; }
+    .preview-area::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px; }
+    .preview-area::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 6px; }
+    .preview-area::-webkit-scrollbar-thumb:hover { background: #999; }
+
+    .font-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      color: #555;
+      background: #f3f3f3;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .font-status-badge.ok { color: #2a7a2a; background: #eef7ee; }
+    .font-status-badge.warn { color: #a06000; background: #fff6e5; }
+    .font-status-badge.error { color: #a02020; background: #ffeeee; }
+  </style>
+<style>.hub-back{position:fixed;top:16px;left:18px;font-size:13px;color:#a3a3a3;text-decoration:none;padding:6px 8px;z-index:5;transition:color .15s;font-family:inherit}.hub-back:hover{color:#0a0a0a}</style>
+</head>
+<body class="landing">
+<div class="landing-page" id="landingPage">
+  <a class="hub-back" href="pdf-tools.html">‹ PDF 工具箱</a>
+  <div class="landing-mark">
+    <svg class="landing-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="29.8" stroke="currentColor" stroke-width="4.9"></circle>
+      <path d="M43 38.5H57M43 61.5H57M50 38.5V61.5" stroke="currentColor" stroke-width="4.9" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+    <h1 class="landing-title">PDF 编辑</h1>
+  </div>
+  <p class="landing-desc">上传 PDF，双击原文即可就地修改，自动匹配原文的字体、字号和颜色，导出改好的文件。</p>
+  <label class="landing-btn" for="pdfUpload">上传文件</label>
+  <label class="landing-link" for="fontUpload">载入本地中文字体</label>
+</div>
+<div class="app">
+  <h1><svg class="logo-mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="29.8" stroke="currentColor" stroke-width="4.9"></circle>
+      <path d="M43 38.5H57M43 61.5H57M50 38.5V61.5" stroke="currentColor" stroke-width="4.9" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+    PDF 编辑 <span>黑白 · 极简 · 自动匹配原文样式</span></h1>
+
+  <div class="toolbar">
+    <div class="toolbar-row">
+      <div class="file-upload">
+        <label class="pill" for="pdfUpload">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          上传 PDF
+        </label>
+        <input type="file" id="pdfUpload" accept=".pdf,application/pdf" />
+        <span class="status-message" id="fileNameDisplay">未选择文件</span>
+
+        <label class="pill ghost" for="fontUpload" title="可选：指定一个 .ttf / .otf 字体文件，用于导出中文（离线或下载失败时使用）">载入本地中文字体</label>
+        <input type="file" id="fontUpload" accept=".ttf,.otf" />
+        <span class="font-status-badge" id="fontStatusBadge">中文字体：用到时自动下载</span>
+      </div>
+    </div>
+
+    <div class="toolbar-row">
+      <div class="font-selector">
+        <span>字体</span>
+        <select id="fontSelect" disabled>
+          <option value="auto" selected>自动（匹配原文）</option>
+          <option value="builtin-hei">黑体</option>
+          <option value="builtin-song">宋体</option>
+          <option value="builtin-kai">楷体</option>
+          <option value="en-inter">Inter（英文）</option>
+          <option value="en-georgia">Georgia（英文）</option>
+          <option value="en-courier">Courier New（英文）</option>
+        </select>
+      </div>
+
+      <div class="size-control">
+        <span>字号</span>
+        <input type="range" id="fontSizeSlider" class="size-slider" min="4" max="144" step="0.5" value="12" disabled />
+        <input type="number" id="fontSizeInput" class="size-input" min="4" max="144" step="0.5" value="12" disabled />
+        <span style="font-size: 0.75rem; color: #888;">pt</span>
+      </div>
+
+      <button class="tgl b" id="boldBtn" title="粗体 (Ctrl/⌘+B)" disabled>B</button>
+      <button class="tgl i" id="italicBtn" title="斜体 (Ctrl/⌘+I)" disabled>I</button>
+
+      <label class="color-wrap">颜色
+        <input type="color" id="colorInput" value="#000000" disabled />
+      </label>
+
+      <button class="link-btn" id="resetStyleBtn" disabled>↺ 还原识别样式</button>
+      <span class="style-info" id="styleInfo"></span>
+    </div>
+  </div>
+
+  <div class="preview-area" id="previewArea">
+    <div class="empty-state" id="emptyState">
+      上传 PDF 文件，即可在页面上修改或添加文字<br>
+      <span style="font-size:0.8rem;">双击原文：就地修改（自动沿用原字体 / 字号 / 粗细 / 颜色，并盖住原文）<br>
+      双击空白处：新增文字（放在点击处，样式匹配附近文字；点在某行文字末尾右侧时，自动紧贴原文后面）· 拖动把手移动（自动吸附对齐，按住 Alt 取消吸附）· × 删除 / 还原原文</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div>
+      <button class="btn" id="addTextBtn" disabled>+ 添加文本</button>
+      <span class="status-message" id="hintMessage">双击原文即可就地修改</span>
+    </div>
+    <button class="btn btn-primary" id="exportBtn" disabled>导出 PDF</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ==================== 常量 & 状态 ====================
+  const RENDER_SCALE = 1.5;         // 预览放大倍数：视图 px = PDF pt × 1.5
+  const LH = 1.25;                  // 文字行高（倍数），预览与导出共用
+  const MIN_PT = 4, MAX_PT = 144;
+  const DEFAULT_HINT = '双击原文即可就地修改';
+
+  let pdfDoc = null;
+  let currentFile = null;           // 原始 PDF 字节（pdf.js 会转移 buffer，所以另存一份）
+  let currentName = 'document.pdf';
+  let pageInfos = [];               // 每页：canvas / textLayer / viewport / runs ...
+  const pageItems = new Map();      // pageNum -> 文字框数据数组
+  let itemCounter = 0;
+  let selected = null;              // 当前选中的文字框
+  let docDominant = null;           // 全文档的“正文”样式
+  let customCjkBytes = null;        // 用户载入的本地中文字体
+  let customCjkName = '';
+
+  // ==================== DOM ====================
+  const $ = (id) => document.getElementById(id);
+  const pdfUpload = $('pdfUpload'), fontUpload = $('fontUpload');
+  const fileNameDisplay = $('fileNameDisplay');
+  const previewArea = $('previewArea'), emptyState = $('emptyState');
+  const fontSelect = $('fontSelect');
+  const fontSizeSlider = $('fontSizeSlider'), fontSizeInput = $('fontSizeInput');
+  const boldBtn = $('boldBtn'), italicBtn = $('italicBtn');
+  const colorInput = $('colorInput'), resetStyleBtn = $('resetStyleBtn');
+  const styleInfo = $('styleInfo');
+  const addTextBtn = $('addTextBtn'), exportBtn = $('exportBtn');
+  const hintMessage = $('hintMessage');
+  const fontStatusBadge = $('fontStatusBadge');
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+  // ==================== 字体：手动选项 & 预览字体栈 ====================
+  const FAMILY_CSS = {
+    sans:  '"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif',
+    serif: '"Times New Roman","Songti SC",SimSun,"Noto Serif SC",serif',
+    mono:  '"Courier New",Courier,NSimSun,monospace',
+    kai:   'KaiTi,"Kaiti SC",STKaiti,"Songti SC",serif'
+  };
+  const FONT_OPTIONS = {
+    'builtin-hei':  { family: 'sans',  css: '"Microsoft YaHei","PingFang SC","Heiti SC",SimHei,"Noto Sans SC",sans-serif' },
+    'builtin-song': { family: 'serif', css: 'SimSun,"Songti SC",STSong,"Noto Serif SC",serif' },
+    'builtin-kai':  { family: 'kai',   css: 'KaiTi,STKaiti,"Kaiti SC",serif' },
+    'en-inter':     { family: 'sans',  css: 'Inter,"Helvetica Neue",Arial,sans-serif' },
+    'en-georgia':   { family: 'serif', css: 'Georgia,"Times New Roman",serif' },
+    'en-courier':   { family: 'mono',  css: '"Courier New",Courier,monospace' }
+  };
+
+  // 常见字体名 → CSS 可识别的 family 名
+  const NAME_ALIAS = {
+    arialmt: 'Arial', arial: 'Arial', timesnewromanpsmt: 'Times New Roman', timesnewromanps: 'Times New Roman',
+    timesnewroman: 'Times New Roman', times: 'Times New Roman', timesroman: 'Times New Roman',
+    couriernewpsmt: 'Courier New', couriernew: 'Courier New', courier: 'Courier New', helvetica: 'Helvetica',
+    calibri: 'Calibri', cambria: 'Cambria', verdana: 'Verdana', tahoma: 'Tahoma', georgia: 'Georgia',
+    segoeui: 'Segoe UI', microsoftyahei: 'Microsoft YaHei', yahei: 'Microsoft YaHei',
+    simsun: 'SimSun', nsimsun: 'NSimSun', simhei: 'SimHei', kaiti: 'KaiTi', simkai: 'KaiTi',
+    fangsong: 'FangSong', simfang: 'FangSong', dengxian: 'DengXian', stsong: 'STSong', stheiti: 'STHeiti',
+    stkaiti: 'STKaiti', pingfangsc: 'PingFang SC', songti: 'Songti SC', songtisc: 'Songti SC',
+    heiti: 'Heiti SC', heitisc: 'Heiti SC', wenquanyimicrohei: 'WenQuanYi Micro Hei',
+    notosanssc: 'Noto Sans SC', notosanscjksc: 'Noto Sans CJK SC', notoserifsc: 'Noto Serif SC',
+    sourcehansanssc: 'Source Han Sans SC', sourcehanserifsc: 'Source Han Serif SC'
+  };
+
+  const stripSubset = (n) => (n || '').replace(/^[A-Z]{6}\+/, '');
+  const isCjkChar = (ch) => !!ch && /[⺀-鿿豈-﫿＀-￯　-〿]/.test(ch);
+
+  function cssNamesFor(clean) {
+    const base = clean.split(/[-,]/)[0];
+    const key = base.toLowerCase().replace(/[\s_]/g, '');
+    const names = [];
+    const alias = NAME_ALIAS[key] || NAME_ALIAS[key.replace(/(psmt|mt|ps)$/, '')];
+    if (alias) names.push(alias);
+    const stripped = base.replace(/(PSMT|MT|PS)$/, '');
+    const spaced = stripped.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+    if (spaced && !names.includes(spaced)) names.push(spaced);
+    if (stripped && !names.includes(stripped)) names.push(stripped);
+    // 只保留可以安全放进 CSS 引号里的名字
+    return names.filter((n) => n.length > 1 && /^[\w\s.+一-龥-]+$/.test(n));
+  }
+
+  // 从 PDF 内部字体名 + pdf.js 的字体对象推断：字体族 / 粗体 / 斜体
+  function classifyFont(rawName, generic, fobj, hasCjk) {
+    const clean = stripSubset(rawName);
+    let family = null;
+    if (/courier|consolas|menlo|lucida\s*console|andale\s*mono|[\s_-]mono(?![a-z])|monospace|typewriter|sourcecode|firacode|cascadia/i.test(clean)) family = 'mono';
+    else if (/kaiti|stkaiti|kaishu|simkai|楷/i.test(clean)) family = 'kai';
+    else if (/sans|arial|helvet|calibri|verdana|tahoma|segoe|yahei|simhei|heiti|stheiti|gothic|dengxian|pingfang|roboto|opensans|lato|myriad|frutiger|futura|trebuchet|wenquanyi|fzhei|黑/i.test(clean)) family = 'sans';
+    else if (/times|georgia|garamond|palatino|cambria|bookantiqua|century|minion|simsun|songti|stsong|fangsong|simfang|fzsong|mingliu|ming|batang|serif|roman|didot|bodoni|baskerville|charter|宋/i.test(clean)) family = 'serif';
+    else if (generic === 'serif') family = 'serif';
+    // 中日韩字体的字宽一律相等，pdf.js 会把它们误判成等宽，所以含中文时不采信
+    else if (generic === 'monospace' && !hasCjk) family = 'mono';
+    else family = 'sans';
+
+    const bold = !!(fobj && (fobj.bold || fobj.black)) ||
+      /bold|black|heavy|demi|semibold|extrabold|ultrabold|(^|[-,])bd($|[^a-z])/i.test(clean);
+    const italic = !!(fobj && fobj.italic) ||
+      /italic|oblique|(^|[-,])(it|ital|obl)($|[^a-z])/i.test(clean);
+
+    return {
+      family, bold, italic,
+      name: clean ? clean.split(/[-,]/)[0] : '',
+      cssNames: clean ? cssNamesFor(clean) : []
+    };
+  }
+
+  // ==================== 工具函数 ====================
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const fmtPt = (v) => String(Math.round(v * 10) / 10);
+  const toHex2 = (n) => Math.round(clamp(n, 0, 255)).toString(16).padStart(2, '0');
+  const rgbToHex = (r, g, b) => '#' + toHex2(r) + toHex2(g) + toHex2(b);
+  function hexToRgb01(hex) {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+    if (!m) return [0, 0, 0];
+    return [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];
+  }
+  function setHint(msg, ms) {
+    hintMessage.textContent = msg;
+    if (ms) setTimeout(() => { if (hintMessage.textContent === msg) hintMessage.textContent = DEFAULT_HINT; }, ms);
+  }
+  function getItems(pageNum) {
+    if (!pageItems.has(pageNum)) pageItems.set(pageNum, []);
+    return pageItems.get(pageNum);
+  }
+
+  // ==================== 从 PDF 提取“文字块”（含字体、字号、粗细） ====================
+  function buildRuns(textContent, viewport, page, pageInfo) {
+    const styles = textContent.styles || {};
+    const infoCache = {};
+    const infoFor = (fontName, str) => {
+      const cjk = /[\u2e80-\u9fff\uf900-\ufaff]/.test(str);
+      const key = fontName + (cjk ? '#c' : '');
+      if (infoCache[key]) return infoCache[key];
+      let fobj = null;
+      try { if (page.commonObjs.has(fontName)) fobj = page.commonObjs.get(fontName); } catch (e) { /* 忽略 */ }
+      const st = styles[fontName] || {};
+      // 未嵌入的标准字体（Helvetica / Times / Courier）拿不到字体对象，此时 fontName 本身就是字体族名
+      const rawName = (fobj && fobj.name) || (fobj || /^g_/.test(fontName) ? '' : fontName);
+      const info = classifyFont(rawName, st.fontFamily, fobj, cjk);
+      info.guessWeight = !fobj;     // 没有字体对象 → 粗体需要靠字宽推断
+      info.asc = Number.isFinite(st.ascent) ? clamp(st.ascent, 0.88, 0.95) : 0.9;
+      info.desc = Number.isFinite(st.descent) ? clamp(-st.descent, 0.24, 0.3) : 0.25;
+      return (infoCache[key] = info);
+    };
+
+    // 粗体推断：把实际字宽和浏览器里 Arial/Times 常规、粗体的字宽比一比
+    const metricCtx = document.createElement('canvas').getContext('2d');
+    const METRIC_FONT = { sans: 'Arial,Helvetica,"Liberation Sans",sans-serif', serif: '"Times New Roman",Times,"Liberation Serif",serif', kai: '"Times New Roman",Times,serif' };
+    const looksBoldByWidth = (str, em, actual, family) => {
+      const stack = METRIC_FONT[family];
+      if (!stack || !/^[\x20-\x7e]{3,}$/.test(str) || !(actual > 0)) return false;
+      metricCtx.font = `400 ${em}px ${stack}`;
+      const reg = metricCtx.measureText(str).width;
+      metricCtx.font = `700 ${em}px ${stack}`;
+      const bld = metricCtx.measureText(str).width;
+      if (!(reg > 0) || (bld - reg) / reg < 0.02) return false;
+      return Math.abs(actual - bld) < Math.abs(actual - reg);
+    };
+
+    const raw = [];
+    for (const it of textContent.items) {
+      if (typeof it.str !== 'string' || !it.str) continue;
+      const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
+      const em = Math.hypot(tx[2], tx[3]);
+      const dirLen = Math.hypot(tx[0], tx[1]);
+      // 只处理正向水平文字（旋转 / 镜像 / 竖排的文字不参与）
+      if (!em || !dirLen || tx[0] <= 0 || tx[3] >= 0 || Math.abs(tx[1]) / dirLen > 0.1) continue;
+      let info = infoFor(it.fontName, it.str);
+      const w = it.width * viewport.scale;
+      if (info.guessWeight && !info.bold && looksBoldByWidth(it.str, em, w, info.family)) info = Object.assign({}, info, { bold: true });
+      raw.push({ str: it.str, x: tx[4], base: tx[5], w, em, info, blank: !it.str.trim() });
+    }
+
+    // 1) 按基线聚成行
+    raw.sort((a, b) => a.base - b.base || a.x - b.x);
+    const lines = [];
+    for (const r of raw) {
+      const last = lines[lines.length - 1];
+      if (last && Math.abs(r.base - last.base) <= 0.3 * Math.max(r.em, last.em)) last.items.push(r);
+      else lines.push({ base: r.base, em: r.em, items: [r] });
+    }
+
+    // 2) 行内按间距 / 样式切成“块”
+    const runs = [];
+    const finish = (cur) => {
+      if (!cur) return;
+      const items = cur.items.slice();
+      while (items.length && items[items.length - 1].blank) items.pop();
+      if (!items.length) return;
+      let text = '';
+      for (let i = 0; i < items.length; i++) {
+        const r = items[i];
+        if (i > 0) {
+          const p = items[i - 1];
+          const gap = r.x - (p.x + p.w);
+          if (gap > 0.15 * Math.max(p.em, r.em) && !/\s$/.test(text) && !/^\s/.test(r.str) &&
+              !isCjkChar(text.slice(-1)) && !isCjkChar(r.str[0])) text += ' ';
+        }
+        text += r.str;
+      }
+      if (!text.trim()) return;
+      // 样式取字数最多的那一段
+      let main = items[0];
+      for (const r of items) if (r.str.trim().length > main.str.trim().length) main = r;
+      const info = main.info;
+      let right = -Infinity;
+      for (const r of items) right = Math.max(right, r.x + r.w);
+      const run = {
+        text, left: items[0].x, right, base: main.base, em: main.em,
+        family: info.family, bold: info.bold, italic: info.italic,
+        name: info.name, cssNames: info.cssNames,
+        top: main.base - main.em * info.asc, bottom: main.base + main.em * info.desc,
+        info: pageInfo, replacedBy: null, detected: null, colors: null
+      };
+      runs.push(run);
+    };
+
+    for (const line of lines) {
+      line.items.sort((a, b) => a.x - b.x);
+      let cur = null;
+      for (const r of line.items) {
+        if (cur) {
+          const prev = cur.items[cur.items.length - 1];
+          const gap = r.x - (prev.x + prev.w);
+          const em = Math.max(prev.em, r.em);
+          const sameStyle = r.blank || prev.blank ||
+            (r.info.family === cur.info.family && r.info.bold === cur.info.bold && r.info.italic === cur.info.italic &&
+             Math.abs(r.em - cur.em) / cur.em < 0.06);
+          if (gap > em * 1.0 || gap < -em * 0.6 || !sameStyle) { finish(cur); cur = null; }
+        }
+        if (!cur) {
+          if (r.blank) continue;
+          cur = { items: [r], info: r.info, em: r.em };
+          continue;
+        }
+        cur.items.push(r);
+      }
+      finish(cur);
+    }
+    return runs;
+  }
+
+  // “正文”样式：按字数加权出现最多的样式；同样式里再按颜色投票，避免把红色小字当成正文色
+  function computeDominant(runs) {
+    const groups = new Map();
+    for (const r of runs) {
+      const key = [r.family, r.bold, r.italic, Math.round(r.em / RENDER_SCALE)].join('|');
+      let g = groups.get(key);
+      if (!g) { g = { weight: 0, runs: [] }; groups.set(key, g); }
+      g.weight += r.text.trim().length;
+      g.runs.push(r);
+    }
+    let top = null;
+    for (const g of groups.values()) if (!top || g.weight > top.weight) top = g;
+    if (!top) return null;
+    const members = top.runs.slice().sort((x, y) => y.text.trim().length - x.text.trim().length).slice(0, 12);
+    const votes = new Map();
+    for (const r of members) {
+      const c = detectedFromRun(r).color;
+      const v = votes.get(c) || { w: 0, run: r };
+      v.w += r.text.trim().length;
+      votes.set(c, v);
+    }
+    let win = null;
+    for (const v of votes.values()) if (!win || v.w > win.w) win = v;
+    return win.run;
+  }
+
+  // ==================== 从画布采样：文字颜色 & 背景色 ====================
+  function sampleRunColors(run) {
+    const info = run.info;
+    const W = info.canvas.width, H = info.canvas.height;
+    const x0 = Math.max(0, Math.floor(run.left - 1)), y0 = Math.max(0, Math.floor(run.top));
+    const x1 = Math.min(W, Math.ceil(run.right + 1)), y1 = Math.min(H, Math.ceil(run.bottom));
+    const w = x1 - x0, h = y1 - y0;
+    if (w <= 0 || h <= 0) return {};
+    let d;
+    try { d = info.ctx.getImageData(x0, y0, w, h).data; } catch (e) { return {}; }
+
+    // 背景色：出现最多的颜色
+    const bins = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      const k = ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
+      let b = bins.get(k);
+      if (!b) { b = [0, 0, 0, 0]; bins.set(k, b); }
+      b[0]++; b[1] += d[i]; b[2] += d[i + 1]; b[3] += d[i + 2];
+    }
+    let best = null;
+    for (const b of bins.values()) if (!best || b[0] > best[0]) best = b;
+    const bg = [best[1] / best[0], best[2] / best[0], best[3] / best[0]];
+
+    // 文字色：离背景最远的那批像素
+    let dmax = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const dr = d[i] - bg[0], dg = d[i + 1] - bg[1], db = d[i + 2] - bg[2];
+      const dist = dr * dr + dg * dg + db * db;
+      if (dist > dmax) dmax = dist;
+    }
+    let text = null;
+    if (dmax > 60 * 60) {
+      const thr = dmax * 0.7;
+      let n = 0, sr = 0, sg = 0, sb = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const dr = d[i] - bg[0], dg = d[i + 1] - bg[1], db = d[i + 2] - bg[2];
+        if (dr * dr + dg * dg + db * db >= thr) { n++; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; }
+      }
+      if (n) text = [sr / n, sg / n, sb / n];
+    }
+    const snapText = (c) => {
+      const mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
+      return (mx < 70 && mx - mn < 30) ? '#000000' : rgbToHex(c[0], c[1], c[2]);
+    };
+    const snapBg = (c) => (Math.min(c[0], c[1], c[2]) > 235 ? '#ffffff' : rgbToHex(c[0], c[1], c[2]));
+    return { bg: snapBg(bg), text: text ? snapText(text) : null };
+  }
+
+  // 一个文字块 → “识别到的样式”
+  function detectedFromRun(run) {
+    if (run.detected) return run.detected;
+    if (!run.colors) run.colors = sampleRunColors(run);
+    const pt = Math.round((run.em / RENDER_SCALE) * 10) / 10;
+    run.detected = {
+      family: run.family, bold: run.bold, italic: run.italic,
+      size: pt * RENDER_SCALE,
+      color: run.colors.text || '#000000',
+      bg: run.colors.bg || '#ffffff',
+      name: run.name, cssNames: run.cssNames
+    };
+    return run.detected;
+  }
+
+  // 双击空白处新增文字时：找最近的文字块当样式来源，太远就用“正文”样式
+  function pickStyleSource(info, x, y) {
+    let best = null, bestD = Infinity;
+    for (const r of info.runs) {
+      const dx = x < r.left ? r.left - x : (x > r.right ? x - r.right : 0);
+      const dy = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);
+      const d = Math.hypot(dx * 0.4, dy);
+      if (d < bestD) { bestD = d; best = r; }
+    }
+    if (best && bestD < Math.max(40, best.em * 1.5)) return best;
+    return info.dominant || docDominant || null;
+  }
+
+  // ==================== 文字框：样式 / 基线 ====================
+  function cssFontStack(item) {
+    if (item.fontValue !== 'auto') return FONT_OPTIONS[item.fontValue].css;
+    const names = item.detected ? item.detected.cssNames.map((n) => '"' + n + '"') : [];
+    return names.concat(FAMILY_CSS[item.family] || FAMILY_CSS.sans).join(',');
+  }
+
+  function applyStyleToDom(item) {
+    const s = item.el.style;
+    s.fontFamily = cssFontStack(item);
+    s.fontSize = item.size + 'px';
+    s.fontWeight = item.bold ? '700' : '400';
+    s.fontStyle = item.italic ? 'italic' : 'normal';
+    s.color = item.color;
+    s.lineHeight = String(LH);
+  }
+
+  // 用隐藏探针精确测出：文字框顶部 → 第一行基线 的距离（px）
+  function measureBaseline(el) {
+    const probe = document.createElement('div');
+    probe.className = 'text-item';
+    probe.style.cssText = el.style.cssText;
+    probe.style.position = 'absolute';
+    probe.style.left = '0';
+    probe.style.top = '0';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    probe.style.outline = 'none';
+    const m = document.createElement('span');
+    m.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline;';
+    probe.appendChild(m);
+    probe.appendChild(document.createTextNode('Hg'));
+    el.parentElement.appendChild(probe);
+    const off = m.getBoundingClientRect().top - probe.getBoundingClientRect().top;
+    probe.remove();
+    return off;
+  }
+
+  function positionToolbar(item) {
+    item.toolbar.classList.toggle('below', item.y < 26);
+  }
+
+  function setPos(item, x, y) {
+    item.x = x; item.y = y;
+    item.wrapper.style.left = x + 'px';
+    item.wrapper.style.top = y + 'px';
+    positionToolbar(item);
+  }
+
+  // 修改样式时保持基线不动（字变大会向上长，而不是整体下沉）
+  function restyle(item, mutator, src) {
+    const base = item.y + measureBaseline(item.el);
+    mutator(item);
+    applyStyleToDom(item);
+    setPos(item, item.x, base - measureBaseline(item.el));
+    if (selected === item) updateControls(src);
+    maybePrefetchCjk(item);
+  }
+
+  function copyDetected(item) {
+    const d = item.detected;
+    if (!d) return;
+    item.family = d.family; item.bold = d.bold; item.italic = d.italic;
+    item.size = d.size; item.color = d.color;
+  }
+
+  // ==================== 选中 & 控件同步 ====================
+  function selectItem(item) {
+    if (selected && selected !== item) selected.wrapper.classList.remove('selected');
+    selected = item || null;
+    if (selected) selected.wrapper.classList.add('selected');
+    updateControls();
+  }
+
+  function updateControls(src) {
+    const on = !!selected;
+    [fontSelect, fontSizeSlider, fontSizeInput, boldBtn, italicBtn, colorInput].forEach((c) => { c.disabled = !on; });
+    resetStyleBtn.disabled = !on || !selected.detected;
+    if (!on) {
+      boldBtn.classList.remove('on'); italicBtn.classList.remove('on');
+      styleInfo.textContent = '选中文字后可微调样式 · 新增 / 修改的文字默认自动匹配原文';
+      return;
+    }
+    const it = selected;
+    const pt = it.size / RENDER_SCALE;
+    fontSelect.value = it.fontValue;
+    if (src !== 'slider') fontSizeSlider.value = pt;
+    if (src !== 'input') fontSizeInput.value = fmtPt(pt);
+    boldBtn.classList.toggle('on', it.bold);
+    italicBtn.classList.toggle('on', it.italic);
+    colorInput.value = it.color;
+    const famName = { sans: '无衬线', serif: '衬线', mono: '等宽', kai: '楷体' }[it.family] || '';
+    if (it.detected) {
+      const d = it.detected;
+      styleInfo.textContent = `原文识别：${d.name || '未知字体'} · ${fmtPt(d.size / RENDER_SCALE)}pt · ${d.bold ? '粗体' : '常规'}${d.italic ? ' · 斜体' : ''}`;
+    } else {
+      styleInfo.textContent = `手动样式（${famName}）· 页面无可识别文字`;
+    }
+  }
+
+  fontSelect.addEventListener('change', () => {
+    if (!selected) return;
+    const v = fontSelect.value;
+    restyle(selected, (it) => {
+      it.fontValue = v;
+      if (v === 'auto') copyDetected(it);
+      else it.family = FONT_OPTIONS[v].family;
+    });
+  });
+
+  fontSizeSlider.addEventListener('input', () => {
+    if (!selected) return;
+    const pt = parseFloat(fontSizeSlider.value);
+    restyle(selected, (it) => { it.size = pt * RENDER_SCALE; }, 'slider');
+  });
+  fontSizeInput.addEventListener('input', () => {
+    if (!selected) return;
+    const v = parseFloat(fontSizeInput.value);
+    if (!Number.isFinite(v) || v < MIN_PT) return;
+    const pt = Math.min(v, MAX_PT);
+    restyle(selected, (it) => { it.size = pt * RENDER_SCALE; }, 'input');
+  });
+  fontSizeInput.addEventListener('change', () => updateControls());
+  fontSizeInput.addEventListener('blur', () => updateControls());
+  fontSizeInput.addEventListener('keydown', (e) => {
+    if (!selected || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const cur = selected.size / RENDER_SCALE;
+    const pt = clamp(cur + (e.key === 'ArrowUp' ? 0.5 : -0.5), MIN_PT, MAX_PT);
+    restyle(selected, (it) => { it.size = pt * RENDER_SCALE; });
+  });
+
+  function toggleBold() { if (selected) restyle(selected, (it) => { it.bold = !it.bold; }); }
+  function toggleItalic() { if (selected) restyle(selected, (it) => { it.italic = !it.italic; }); }
+  // 按钮 mousedown 时不抢走文字框的焦点
+  [boldBtn, italicBtn].forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
+  boldBtn.addEventListener('click', toggleBold);
+  italicBtn.addEventListener('click', toggleItalic);
+  colorInput.addEventListener('input', () => {
+    if (selected) restyle(selected, (it) => { it.color = colorInput.value; });
+  });
+  resetStyleBtn.addEventListener('click', () => {
+    if (!selected || !selected.detected) return;
+    restyle(selected, (it) => { it.fontValue = 'auto'; copyDetected(it); });
+  });
+
+  // ==================== 文字框：创建 / 删除 ====================
+  function createItem(info, opts) {
+    const item = {
+      id: 't' + (itemCounter++), page: info.pageNum, info,
+      text: opts.text || '', x: 0, y: 0,
+      fontValue: 'auto', family: 'sans', bold: false, italic: false,
+      size: 12 * RENDER_SCALE, color: '#000000',
+      detected: opts.detected || null,
+      cover: opts.cover || null,
+      run: opts.run || null
+    };
+    copyDetected(item);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-item-wrapper';
+    wrapper.dataset.id = item.id;
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'item-toolbar';
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = '⋮⋮';
+    handle.title = '拖动移动（自动吸附对齐，按住 Alt 取消吸附）';
+    const del = document.createElement('div');
+    del.className = 'delete-btn';
+    del.textContent = '×';
+    del.title = item.cover ? '撤销修改（还原原文）' : '删除';
+    toolbar.appendChild(handle);
+    toolbar.appendChild(del);
+
+    const el = document.createElement('div');
+    el.className = 'text-item';
+    el.contentEditable = 'plaintext-only';
+    if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
+    el.spellcheck = false;
+    el.textContent = item.text;
+
+    wrapper.appendChild(toolbar);
+    wrapper.appendChild(el);
+    info.textLayer.appendChild(wrapper);
+
+    item.wrapper = wrapper; item.el = el; item.toolbar = toolbar;
+
+    if (item.cover) {
+      const c = document.createElement('div');
+      c.className = 'cover';
+      c.style.left = item.cover.x + 'px';
+      c.style.top = item.cover.y + 'px';
+      c.style.width = item.cover.w + 'px';
+      c.style.height = item.cover.h + 'px';
+      c.style.background = item.cover.color;
+      info.textLayer.insertBefore(c, info.textLayer.firstChild);
+      item.coverEl = c;
+    }
+
+    applyStyleToDom(item);
+    getItems(info.pageNum).push(item);
+    wireItem(item, handle, del);
+    return item;
+  }
+
+  function removeItem(item) {
+    const arr = getItems(item.page);
+    const i = arr.indexOf(item);
+    if (i !== -1) arr.splice(i, 1);
+    if (item.run) item.run.replacedBy = null;
+    if (item.coverEl) item.coverEl.remove();
+    item.wrapper.remove();
+    if (selected === item) { selected = null; updateControls(); }
+  }
+
+  function plainText(el) {
+    return (el.innerText || '').replace(/\r/g, '');
+  }
+
+  function wireItem(item, handle, del) {
+    const el = item.el;
+
+    el.addEventListener('input', () => {
+      item.text = plainText(el);
+      maybePrefetchCjk(item);
+    });
+    el.addEventListener('focus', () => selectItem(item));
+    el.addEventListener('blur', (e) => {
+      // 新增的空文字框失焦后自动清理（点工具栏控件时不清理）
+      const to = e.relatedTarget;
+      if (to && to.closest && to.closest('.toolbar')) return;
+      if (!item.cover && !plainText(el).trim()) removeItem(item);
+    });
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, t);
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { el.blur(); return; }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === 'b') { e.preventDefault(); toggleBold(); }
+        else if (k === 'i') { e.preventDefault(); toggleItalic(); }
+      }
+    });
+    el.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+    del.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); removeItem(item); });
+
+    // ---- 拖动 + 吸附 ----
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handle.setPointerCapture(e.pointerId);
+      selectItem(item);
+      const startX = e.clientX, startY = e.clientY;
+      const origL = item.x, origT = item.y;
+      const bOff = measureBaseline(el);
+      const info = item.info;
+
+      const onMove = (ev) => {
+        let left = origL + (ev.clientX - startX);
+        let top = origT + (ev.clientY - startY);
+        const layerW = info.textLayer.offsetWidth, layerH = info.textLayer.offsetHeight;
+        const w = item.wrapper.offsetWidth, h = item.wrapper.offsetHeight;
+        left = clamp(left, 0, Math.max(0, layerW - w));
+        top = clamp(top, 0, Math.max(0, layerH - h));
+        if (!ev.altKey) {
+          const sn = snapPosition(info, left, top, bOff);
+          left = sn.left; top = sn.top;
+          showGuides(info, sn);
+        } else hideGuides(info);
+        setPos(item, left, top);
+      };
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        hideGuides(info);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  // 吸附到附近文字行的基线 / 左边缘
+  function snapPosition(info, left, top, bOff) {
+    const SN = 8;
+    const out = { left, top, gH: null, gV: null };
+    let bestRun = null, bd = SN;
+    const baseNow = top + bOff;
+    for (const r of info.runs) {
+      const d = Math.abs(baseNow - r.base);
+      if (d < bd) { bd = d; bestRun = r; }
+    }
+    if (bestRun) { out.top = bestRun.base - bOff; out.gH = { y: bestRun.base }; }
+    let leftRun = null, ld = SN;
+    for (const r of info.runs) {
+      const d = Math.abs(left - r.left);
+      if (d < ld) { ld = d; leftRun = r; }
+    }
+    if (leftRun) { out.left = leftRun.left; out.gV = { x: leftRun.left, y0: leftRun.top, y1: leftRun.bottom }; }
+    return out;
+  }
+  function showGuides(info, sn) {
+    if (sn.gH) { info.guideH.style.display = 'block'; info.guideH.style.top = sn.gH.y + 'px'; }
+    else info.guideH.style.display = 'none';
+    if (sn.gV) {
+      info.guideV.style.display = 'block';
+      info.guideV.style.left = sn.gV.x + 'px';
+      info.guideV.style.top = sn.gV.y0 + 'px';
+      info.guideV.style.height = (sn.gV.y1 - sn.gV.y0) + 'px';
+    } else info.guideV.style.display = 'none';
+  }
+  function hideGuides(info) { info.guideH.style.display = 'none'; info.guideV.style.display = 'none'; }
+
+  // ==================== 双击：就地修改原文 / 新增文字 ====================
+  function placeCaret(el, cx, cy) {
+    el.focus();
+    let range = null;
+    try {
+      if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(cx, cy);
+      else if (document.caretPositionFromPoint) {
+        const p = document.caretPositionFromPoint(cx, cy);
+        if (p) { range = document.createRange(); range.setStart(p.offsetNode, p.offset); range.collapse(true); }
+      }
+    } catch (e) { range = null; }
+    if (!range || !el.contains(range.startContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+    }
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function startReplace(info, run, cx, cy) {
+    if (run.replacedBy) { placeCaret(run.replacedBy.el, cx, cy); return; }
+    const det = detectedFromRun(run);
+    const pad = 2;
+    const cover = {
+      x: run.left - pad, y: run.top,
+      w: run.right - run.left + pad * 2, h: run.bottom - run.top,
+      color: det.bg
+    };
+    const item = createItem(info, { text: run.text, detected: det, cover, run });
+    run.replacedBy = item;
+    // 文字起点 = 原文左边缘，基线 = 原文基线，所以改完和原文“严丝合缝”
+    setPos(item, run.left, run.base - measureBaseline(item.el));
+    selectItem(item);
+    placeCaret(item.el, cx, cy);
+    maybePrefetchCjk(item);
+    hideAllHover();
+  }
+
+  // 点在某行文字右侧不远处：返回这一行最靠右、且在点击位置左边的那段原文
+  function findLineTail(info, x, y) {
+    let tail = null;
+    for (const r of info.runs) {
+      if (y < r.top - 2 || y > r.bottom + 2 || r.right > x) continue;
+      if (!tail || r.right > tail.right) tail = r;
+    }
+    if (tail && x - tail.right <= tail.em * 3) return tail;
+    return null;
+  }
+
+  // 新增文字：默认就放在点击处，不吸附；只有点在某行原文末尾附近时，才紧贴原文后面接着写
+  function startNew(info, x, y, text, noAttach) {
+    const tail = noAttach ? null : findLineTail(info, x, y);
+    const src = tail || pickStyleSource(info, x, y);
+    const det = src ? detectedFromRun(src) : null;
+    const item = createItem(info, { text: text || '', detected: det });
+    const bOff = measureBaseline(item.el);
+    if (tail) {
+      const lastCh = tail.text.slice(-1);
+      const gap = isCjkChar(lastCh) ? 0 : item.size * 0.27;      // 英文接一个空格宽，中文直接贴着
+      setPos(item, tail.right + gap, tail.base - bOff);
+    } else {
+      setPos(item, x, y);
+    }
+    selectItem(item);
+    item.el.focus();
+    if (text) {
+      const range = document.createRange();
+      range.selectNodeContents(item.el);
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+    return item;
+  }
+
+  function layerPoint(info, e) {
+    const r = info.textLayer.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function hitRun(info, x, y) {
+    let best = null, area = Infinity;
+    for (const r of info.runs) {
+      if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 1 && y <= r.bottom + 1) {
+        const a = (r.right - r.left) * (r.bottom - r.top);
+        if (a < area) { area = a; best = r; }
+      }
+    }
+    return best;
+  }
+
+  function hideAllHover() {
+    for (const info of pageInfos) {
+      info.hoverBox.style.display = 'none';
+      info.container.style.cursor = '';
+    }
+  }
+
+  previewArea.addEventListener('mousemove', (e) => {
+    const container = e.target.closest && e.target.closest('.page-container');
+    if (!container || e.target.closest('.text-item-wrapper')) { hideAllHover(); return; }
+    const info = pageInfos[parseInt(container.dataset.pageNum, 10) - 1];
+    if (!info) return;
+    const pt = layerPoint(info, e);
+    const run = hitRun(info, pt.x, pt.y);
+    if (run && !run.replacedBy) {
+      const b = info.hoverBox;
+      b.style.display = 'block';
+      b.style.left = (run.left - 2) + 'px';
+      b.style.top = run.top + 'px';
+      b.style.width = (run.right - run.left + 4) + 'px';
+      b.style.height = (run.bottom - run.top) + 'px';
+      container.style.cursor = 'text';
+    } else {
+      info.hoverBox.style.display = 'none';
+      container.style.cursor = '';
+    }
+  });
+  previewArea.addEventListener('mouseleave', hideAllHover);
+
+  previewArea.addEventListener('dblclick', (e) => {
+    if (!pdfDoc) return;
+    if (e.target.closest('.text-item-wrapper')) return;
+    const container = e.target.closest('.page-container');
+    if (!container) return;
+    const info = pageInfos[parseInt(container.dataset.pageNum, 10) - 1];
+    if (!info) return;
+    window.getSelection().removeAllRanges();
+    const pt = layerPoint(info, e);
+    const run = hitRun(info, pt.x, pt.y);
+    if (run) startReplace(info, run, e.clientX, e.clientY);
+    else startNew(info, pt.x, pt.y, '');
+  });
+
+  // 点到页面空白处 → 取消选中
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.text-item-wrapper, .toolbar, .actions')) return;
+    if (selected) selectItem(null);
+  });
+
+  addTextBtn.addEventListener('click', () => {
+    if (!pdfDoc || !pageInfos.length) return;
+    // 放在当前可见的那一页
+    const areaRect = previewArea.getBoundingClientRect();
+    let info = pageInfos[0];
+    for (const p of pageInfos) {
+      if (p.container.getBoundingClientRect().bottom > areaRect.top + 60) { info = p; break; }
+    }
+    const cr = info.textLayer.getBoundingClientRect();
+    const x = clamp(areaRect.left - cr.left + 50, 20, Math.max(20, info.textLayer.offsetWidth - 160));
+    const y = clamp(areaRect.top - cr.top + 50, 20, Math.max(20, info.textLayer.offsetHeight - 60));
+    startNew(info, x, y, '新文本', true);
+  });
+
+  // ==================== 中文字体：按需加载 ====================
+  const CJK_VER = '0.4.4';
+  const CJK_FILES = {
+    'sans-400':  `@expo-google-fonts/noto-sans-sc@${CJK_VER}/400Regular/NotoSansSC_400Regular.ttf`,
+    'sans-700':  `@expo-google-fonts/noto-sans-sc@${CJK_VER}/700Bold/NotoSansSC_700Bold.ttf`,
+    'serif-400': `@expo-google-fonts/noto-serif-sc@${CJK_VER}/400Regular/NotoSerifSC_400Regular.ttf`,
+    'serif-700': `@expo-google-fonts/noto-serif-sc@${CJK_VER}/700Bold/NotoSerifSC_700Bold.ttf`
+  };
+  const CDN_PREFIXES = [
+    'https://cdn.jsdelivr.net/npm/',
+    'https://fastly.jsdelivr.net/npm/',
+    'https://unpkg.com/',
+    'https://npm.elemecdn.com/'
+  ];
+  const cjkCache = {};       // key -> Promise<Uint8Array|null>
+  const cjkFailAt = {};
+
+  function setBadge(text, cls) {
+    fontStatusBadge.textContent = text;
+    fontStatusBadge.className = 'font-status-badge' + (cls ? ' ' + cls : '');
+  }
+
+  async function fetchWithProgress(url, label) {
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const total = parseInt(resp.headers.get('content-length') || '0', 10);
+    if (!resp.body || !resp.body.getReader) return new Uint8Array(await resp.arrayBuffer());
+    const reader = resp.body.getReader();
+    const chunks = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      setBadge(`⏳ 下载${label} ${(got / 1048576).toFixed(1)}${total ? '/' + (total / 1048576).toFixed(1) : ''} MB`, 'warn');
+    }
+    const out = new Uint8Array(got);
+    let o = 0;
+    for (const c of chunks) { out.set(c, o); o += c.length; }
+    return out;
+  }
+
+  function loadCjk(key) {
+    if (customCjkBytes) return Promise.resolve(customCjkBytes);
+    if (cjkCache[key]) return cjkCache[key];
+    const label = key.startsWith('serif') ? '宋体字库' : '黑体字库';
+    cjkCache[key] = (async () => {
+      for (const prefix of CDN_PREFIXES) {
+        try {
+          const bytes = await fetchWithProgress(prefix + CJK_FILES[key], label);
+          if (bytes.length < 100000) throw new Error('文件异常');
+          setBadge('✓ 中文字体就绪', 'ok');
+          return bytes;
+        } catch (err) {
+          console.warn('字体源失败:', prefix, err && err.message);
+        }
+      }
+      delete cjkCache[key];
+      cjkFailAt[key] = Date.now();
+      setBadge('⚠ 中文字体下载失败 · 可点「载入本地中文字体」', 'error');
+      return null;
+    })();
+    return cjkCache[key];
+  }
+
+  const NEEDS_UNICODE_RE = /[^ -~ -ÿ‘’‚“”„–—•…€™\n\t]/;
+  const cjkKeyFor = (family, bold) => `${(family === 'serif' || family === 'kai') ? 'serif' : 'sans'}-${bold ? 700 : 400}`;
+
+  // 编辑到中文时，后台提前把字体下好，导出时就不用等
+  function maybePrefetchCjk(item) {
+    if (customCjkBytes || !NEEDS_UNICODE_RE.test(item.text || '')) return;
+    const key = cjkKeyFor(item.family, item.bold);
+    if (cjkFailAt[key] && Date.now() - cjkFailAt[key] < 30000) return;
+    loadCjk(key);
+  }
+
+  fontUpload.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    fontUpload.value = '';
+    if (!f) return;
+    try {
+      const buf = new Uint8Array(await f.arrayBuffer());
+      const tag = String.fromCharCode(buf[0], buf[1], buf[2], buf[3]);
+      if (tag === 'ttcf') throw new Error('暂不支持 .ttc 字体集合，请换成单个 .ttf / .otf 文件');
+      fontkit.create(buf);   // 校验能否解析
+      customCjkBytes = buf; customCjkName = f.name;
+      setBadge('✓ 自定义字体：' + f.name, 'ok');
+    } catch (err) {
+      alert('字体文件不可用：' + err.message);
+    }
+  });
+
+  // ==================== TrueType 子集化 ====================
+  // pdf-lib 自带的子集化（fontkit）会把 Noto SC 之类的大字库里部分字形写坏，出现“缺字”。
+  // 这里自己做：原样复制用到的字形数据，其余字形清空，字形编号保持不变，所以不会出错，文件也只有几百 KB。
+  const fontkitCache = new WeakMap();
+  function subsetTrueType(bytes, text) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const tagAt = (o) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+    const ver = dv.getUint32(0);
+    if (ver !== 0x00010000 && tagAt(0) !== 'true') return null;          // 不是 TrueType 轮廓（例如 CFF 的 .otf）
+    const numTables = dv.getUint16(4);
+    const tables = {};
+    for (let i = 0; i < numTables; i++) {
+      const o = 12 + 16 * i;
+      tables[tagAt(o)] = { off: dv.getUint32(o + 8), len: dv.getUint32(o + 12) };
+    }
+    for (const t of ['glyf', 'loca', 'head', 'maxp', 'cmap', 'hhea', 'hmtx']) if (!tables[t]) return null;
+    const locaFmt = dv.getInt16(tables.head.off + 50);
+    const numGlyphs = dv.getUint16(tables.maxp.off + 4);
+    const loca = (i) => (locaFmt === 0 ? dv.getUint16(tables.loca.off + 2 * i) * 2 : dv.getUint32(tables.loca.off + 4 * i));
+
+    let fk = fontkitCache.get(bytes);
+    if (!fk) { fk = fontkit.create(bytes); fontkitCache.set(bytes, fk); }
+    const stack = [];
+    for (const ch of text) {
+      const g = fk.glyphForCodePoint(ch.codePointAt(0));
+      if (g && g.id) stack.push(g.id);
+    }
+    const need = new Set([0]);
+    while (stack.length) {
+      const g = stack.pop();
+      if (need.has(g) || g >= numGlyphs) continue;
+      need.add(g);
+      const s = loca(g), e = loca(g + 1);
+      if (e - s < 10) continue;
+      const go = tables.glyf.off + s;
+      if (dv.getInt16(go) < 0) {                                          // 复合字形：把组成部件也带上
+        let p = go + 10;
+        for (;;) {
+          const flags = dv.getUint16(p);
+          stack.push(dv.getUint16(p + 2));
+          p += 4;
+          p += (flags & 1) ? 4 : 2;
+          if (flags & 8) p += 2; else if (flags & 0x40) p += 4; else if (flags & 0x80) p += 8;
+          if (!(flags & 0x20)) break;
+        }
+      }
+    }
+
+    // 新的 glyf / loca（统一用长格式）
+    const parts = [];
+    const newLoca = new DataView(new ArrayBuffer(4 * (numGlyphs + 1)));
+    let pos = 0;
+    for (let i = 0; i < numGlyphs; i++) {
+      newLoca.setUint32(4 * i, pos);
+      if (!need.has(i)) continue;
+      const s = loca(i), e = loca(i + 1), len = e - s;
+      if (len <= 0) continue;
+      parts.push(bytes.subarray(tables.glyf.off + s, tables.glyf.off + e));
+      const pad = (4 - (len % 4)) % 4;
+      if (pad) parts.push(new Uint8Array(pad));
+      pos += len + pad;
+    }
+    newLoca.setUint32(4 * numGlyphs, pos);
+    const glyf = new Uint8Array(pos);
+    let o = 0;
+    for (const part of parts) { glyf.set(part, o); o += part.length; }
+
+    // head：改为长 loca 格式；post：换成最小的 3.0 版
+    const slice = (t) => bytes.slice(tables[t].off, tables[t].off + tables[t].len);
+    const head = slice('head');
+    new DataView(head.buffer).setInt16(50, 1);
+    new DataView(head.buffer).setUint32(8, 0);
+    let post = null;
+    if (tables.post && tables.post.len >= 32) {
+      post = bytes.slice(tables.post.off, tables.post.off + 32);
+      new DataView(post.buffer).setUint32(0, 0x00030000);
+    }
+    const out = {
+      'OS/2': tables['OS/2'] ? slice('OS/2') : null, cmap: slice('cmap'), 'cvt ': tables['cvt '] ? slice('cvt ') : null,
+      fpgm: tables.fpgm ? slice('fpgm') : null, gasp: tables.gasp ? slice('gasp') : null,
+      glyf, head, hhea: slice('hhea'), hmtx: slice('hmtx'), loca: new Uint8Array(newLoca.buffer),
+      maxp: slice('maxp'), name: tables.name ? slice('name') : null, post, prep: tables.prep ? slice('prep') : null
+    };
+    const tags = Object.keys(out).filter((t) => out[t]).sort();
+    const n = tags.length;
+    let es = 0; while ((1 << (es + 1)) <= n) es++;
+    const searchRange = (1 << es) * 16;
+    let total = 12 + 16 * n;
+    const layout = {};
+    for (const t of tags) { layout[t] = total; total += (out[t].length + 3) & ~3; }
+    const file = new Uint8Array(total);
+    const fv = new DataView(file.buffer);
+    fv.setUint32(0, 0x00010000); fv.setUint16(4, n); fv.setUint16(6, searchRange);
+    fv.setUint16(8, es); fv.setUint16(10, n * 16 - searchRange);
+    const sum = (u8) => {
+      let c = 0;
+      const l = (u8.length + 3) & ~3;
+      for (let i = 0; i < l; i += 4) {
+        c = (c + (((u8[i] << 24) | ((u8[i + 1] || 0) << 16) | ((u8[i + 2] || 0) << 8) | (u8[i + 3] || 0)) >>> 0)) >>> 0;
+      }
+      return c;
+    };
+    tags.forEach((t, i) => {
+      const r = 12 + 16 * i;
+      for (let k = 0; k < 4; k++) file[r + k] = t.charCodeAt(k);
+      fv.setUint32(r + 4, sum(out[t])); fv.setUint32(r + 8, layout[t]); fv.setUint32(r + 12, out[t].length);
+      file.set(out[t], layout[t]);
+    });
+    fv.setUint32(layout.head + 8, (0xB1B0AFBA - sum(file)) >>> 0);
+    return file;
+  }
+
+  // ==================== 渲染 PDF ====================
+  function resetUI() {
+    previewArea.innerHTML = '';
+    previewArea.appendChild(emptyState);
+    pageInfos = [];
+    pageItems.clear();
+    itemCounter = 0;
+    selected = null;
+    docDominant = null;
+    emptyState.style.display = 'block';
+    document.body.classList.add('landing');
+    addTextBtn.disabled = true;
+    exportBtn.disabled = true;
+    fileNameDisplay.textContent = '未选择文件';
+    setHint(DEFAULT_HINT);
+    updateControls();
+  }
+
+  async function renderPdf(arrayBuffer) {
+    try {
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/cmaps/',
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/standard_fonts/'
+      });
+      pdfDoc = await loadingTask.promise;
+      const numPages = pdfDoc.numPages;
+
+      previewArea.innerHTML = '';
+      emptyState.style.display = 'none';
+      pageInfos = [];
+      pageItems.clear();
+      itemCounter = 0;
+      selected = null;
+      updateControls();
+
+      const allRuns = [];
+      for (let i = 1; i <= numPages; i++) {
+        setHint(`正在解析第 ${i} / ${numPages} 页…`);
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: RENDER_SCALE });
+
+        const container = document.createElement('div');
+        container.className = 'page-container';
+        container.dataset.pageNum = i;
+        container.style.width = viewport.width + 'px';
+        container.style.height = viewport.height + 'px';
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-page-canvas';
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = viewport.width + 'px';
+        canvas.style.height = viewport.height + 'px';
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const textLayer = document.createElement('div');
+        textLayer.className = 'text-layer';
+        textLayer.style.width = viewport.width + 'px';
+        textLayer.style.height = viewport.height + 'px';
+
+        const hoverBox = document.createElement('div');
+        hoverBox.className = 'hover-box';
+        const guideH = document.createElement('div');
+        guideH.className = 'guide-line guide-line-horizontal';
+        const guideV = document.createElement('div');
+        guideV.className = 'guide-line guide-line-vertical';
+
+        textLayer.appendChild(hoverBox);
+        container.appendChild(canvas);
+        container.appendChild(textLayer);
+        container.appendChild(guideH);
+        container.appendChild(guideV);
+        previewArea.appendChild(container);
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // 渲染之后，pdf.js 才拿到真实字体对象（名称、粗细、斜体）
+        const info = { pageNum: i, canvas, ctx, textLayer, viewport, container, hoverBox, guideH, guideV, runs: [], dominant: null };
+        try {
+          const tc = await page.getTextContent();
+          info.runs = buildRuns(tc, viewport, page, info);
+          info.dominant = computeDominant(info.runs);
+          allRuns.push(...info.runs);
+        } catch (err) {
+          console.warn('文字识别失败（第 ' + i + ' 页）:', err);
+        }
+        pageInfos.push(info);
+        getItems(i);
+      }
+
+      docDominant = computeDominant(allRuns);
+      addTextBtn.disabled = false;
+      exportBtn.disabled = false;
+      if (!allRuns.length) setHint('未检测到文字层（可能是扫描件）：新增文字将使用默认样式', 6000);
+      else setHint(`已识别 ${allRuns.length} 处文字 · 双击原文即可就地修改`, 0);
+    } catch (error) {
+      console.error('PDF 渲染失败:', error);
+      alert('PDF 加载失败，请检查文件格式。');
+      resetUI();
+    }
+  }
+
+  pdfUpload.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) {
+      alert('请上传 PDF 文件');
+      pdfUpload.value = '';
+      return;
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    currentFile = arrayBuffer.slice(0);
+    currentName = file.name.replace(/\.pdf$/i, '') || 'document';
+    resetUI();
+    document.body.classList.remove('landing');
+    emptyState.style.display = 'none';
+    fileNameDisplay.textContent = file.name;
+    await renderPdf(arrayBuffer);
+    pdfUpload.value = '';
+  });
+
+  // ==================== 导出 PDF ====================
+  const STD_NAMES = {
+    sans:  ['Helvetica', 'HelveticaBold', 'HelveticaOblique', 'HelveticaBoldOblique'],
+    serif: ['TimesRoman', 'TimesRomanBold', 'TimesRomanItalic', 'TimesRomanBoldItalic'],
+    mono:  ['Courier', 'CourierBold', 'CourierOblique', 'CourierBoldOblique']
+  };
+  const stdNameFor = (family, bold, italic) => {
+    const fam = family === 'kai' ? 'serif' : family;
+    return STD_NAMES[fam][(bold ? 1 : 0) + (italic ? 2 : 0)];
+  };
+
+  exportBtn.addEventListener('click', async () => {
+    if (!currentFile || !pdfDoc) { alert('请先上传 PDF'); return; }
+    exportBtn.disabled = true;
+    try {
+      await doExport();
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出 PDF 时发生错误: ' + error.message);
+    } finally {
+      exportBtn.disabled = false;
+    }
+  });
+
+  async function doExport() {
+    const { PDFDocument, rgb, StandardFonts, degrees } = PDFLib;
+
+    const all = [];
+    for (const arr of pageItems.values()) for (const it of arr) all.push(it);
+    // 以 DOM 里的最新文字为准
+    for (const it of all) it.text = plainText(it.el);
+    const todo = all.filter((it) => it.cover || it.text.trim());
+    if (!todo.length) { setHint('还没有任何修改可导出', 3000); return; }
+
+    // 1) 需要中文字库的，先确保下载完成
+    const needKeys = new Set();
+    for (const it of todo) if (NEEDS_UNICODE_RE.test(it.text)) needKeys.add(cjkKeyFor(it.family, it.bold));
+    const cjkBytes = {};
+    for (const key of needKeys) {
+      setHint('正在准备中文字体…');
+      const b = await loadCjk(key);
+      if (!b) {
+        alert('中文字体加载失败，无法导出中文。\n\n请检查网络后重试，或点击「载入本地中文字体」选择一个 .ttf / .otf 字体文件。');
+        setHint(DEFAULT_HINT);
+        return;
+      }
+      cjkBytes[key] = b;
+    }
+
+    const doc = await PDFDocument.load(currentFile, { ignoreEncryption: true });
+    doc.registerFontkit(fontkit);
+    const stdCache = {};
+    const getStd = async (family, bold, italic) => {
+      const n = stdNameFor(family, bold, italic);
+      return stdCache[n] || (stdCache[n] = await doc.embedFont(StandardFonts[n]));
+    };
+    const canEncode = (font, ch) => { try { font.encodeText(ch); return true; } catch (e) { return false; } };
+
+    // 2) 先把每个文字框拆成“标准字体段 / 中文字库段”，并汇总每个中文字库实际用到的字
+    setHint('正在排版文字…');
+    const plans = [];
+    const usedText = {};
+    for (const it of todo) {
+      const text = it.text.replace(/\n+$/, '');
+      if (!text.trim()) continue;
+      const stdFont = await getStd(it.family, it.bold, it.italic);
+      const ckey = cjkKeyFor(it.family, it.bold);
+      const lines = text.split('\n').map((line) => {
+        const segs = [];
+        for (const ch of line) {
+          const useStd = canEncode(stdFont, ch);
+          const last = segs[segs.length - 1];
+          if (last && last.std === useStd) last.t += ch;
+          else segs.push({ std: useStd, t: ch });
+        }
+        for (const sg of segs) if (!sg.std) usedText[ckey] = (usedText[ckey] || '') + sg.t;
+        return segs;
+      });
+      plans.push({ it, stdFont, ckey, lines });
+    }
+
+    // 3) 中文字库：只保留用到的字形再嵌入
+    const cjkFonts = {};
+    for (const key of Object.keys(usedText)) {
+      setHint('正在嵌入中文字体…');
+      const sub = subsetTrueType(cjkBytes[key], usedText[key]);
+      cjkFonts[key] = sub
+        ? await doc.embedFont(sub, { subset: false })
+        : await doc.embedFont(cjkBytes[key], { subset: true });   // 非 TrueType 轮廓（如 CFF 的 .otf）退回 pdf-lib 自带方式
+    }
+
+    // 4) 写入页面
+    setHint('正在写入文字…');
+    const pages = doc.getPages();
+    for (let pn = 1; pn <= pages.length; pn++) {
+      const page = pages[pn - 1];
+      const info = pageInfos[pn - 1];
+      if (!info) continue;
+      const vp = info.viewport;
+      const angle = degrees(vp.rotation || 0);
+      const rad = ((vp.rotation || 0) * Math.PI) / 180;
+      const items = getItems(pn);
+
+      // 先盖住被替换的原文
+      for (const it of items) {
+        if (!it.cover) continue;
+        const c = it.cover;
+        const [x1, y1] = vp.convertToPdfPoint(c.x, c.y);
+        const [x2, y2] = vp.convertToPdfPoint(c.x + c.w, c.y + c.h);
+        const [r, g, b] = hexToRgb01(c.color);
+        page.drawRectangle({
+          x: Math.min(x1, x2), y: Math.min(y1, y2),
+          width: Math.abs(x2 - x1), height: Math.abs(y2 - y1),
+          color: rgb(r, g, b), borderWidth: 0
+        });
+      }
+
+      // 再写新文字（基线位置由 DOM 实测，和预览一致）
+      for (const plan of plans) {
+        const it = plan.it;
+        if (it.page !== pn) continue;
+        const [cr, cg, cb] = hexToRgb01(it.color);
+        const color = rgb(cr, cg, cb);
+        const sizePt = it.size / vp.scale;
+        const baseView = it.y + measureBaseline(it.el);
+        plan.lines.forEach((segs, li) => {
+          if (!segs.length) return;
+          let [px, py] = vp.convertToPdfPoint(it.x, baseView + li * it.size * LH);
+          for (const sg of segs) {
+            const font = sg.std ? plan.stdFont : cjkFonts[plan.ckey];
+            page.drawText(sg.t, { x: px, y: py, size: sizePt, font, color, rotate: angle });
+            const w = font.widthOfTextAtSize(sg.t, sizePt);
+            px += w * Math.cos(rad);
+            py += w * Math.sin(rad);
+          }
+        });
+      }
+    }
+
+    const bytes = await doc.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentName}_edited.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setHint('导出成功！', 2500);
+  }
+
+  resetUI();
+})();
+</script>
+</body>
+</html>

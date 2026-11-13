@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Markdown 转换器</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230A0A0A'/%3E%3Ccircle cx='50' cy='50' r='29.8' stroke='%23fff' stroke-width='4.9' fill='none'/%3E%3Cpath d='M50 38V60M41.5 51.5L50 60L58.5 51.5' stroke='%23fff' stroke-width='4.9' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<style>
+  :root{--ink:#0A0A0A;--ink2:#111;--soft:#6B6B6B;--faint:#A3A3A3;--paper:#FFF;--shell:#F7F7F7;--line:#E6E6E6;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--paper);color:var(--ink);}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .back{position:fixed;top:16px;left:18px;font-size:13px;color:var(--faint);text-decoration:none;padding:6px 8px;z-index:5;transition:color .15s;}
+  .back:hover{color:var(--ink);}
+  .wrap{max-width:880px;margin:0 auto;padding:64px 24px 56px;display:flex;flex-direction:column;gap:22px;}
+  header{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;margin-bottom:10px;}
+  .ring{width:50px;height:50px;color:var(--ink);}
+  h1{font-size:32px;font-weight:700;letter-spacing:3px;}
+  .desc{font-size:15px;color:var(--soft);max-width:420px;line-height:1.7;}
+  .card{border:1px solid var(--line);border-radius:16px;background:var(--paper);overflow:hidden;}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--shell);min-height:52px;}
+  .card-h span{font-size:14px;font-weight:600;letter-spacing:.5px;}
+  .acts{display:flex;gap:8px;}
+  .btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 16px;cursor:pointer;transition:all .15s;}
+  .btn:hover{border-color:var(--ink);}
+  .btn:active{transform:scale(.96);}
+  .btn.dark{background:var(--ink2);color:#fff;border-color:var(--ink2);}
+  textarea{display:block;width:100%;min-height:240px;border:0;outline:0;resize:vertical;padding:16px;font:14px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC","Microsoft YaHei",monospace;color:var(--ink);background:var(--paper);}
+  textarea::placeholder{color:var(--faint);}
+  .go{align-self:center;font:inherit;font-size:14px;border:0;background:var(--ink2);color:#fff;border-radius:999px;padding:12px 40px;cursor:pointer;letter-spacing:2px;box-shadow:0 10px 26px rgba(0,0,0,.16);transition:all .15s;}
+  .go:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(0,0,0,.2);}
+  .go:active{transform:scale(.97);}
+  #out{min-height:200px;max-height:520px;overflow:auto;padding:20px 24px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;}
+  #out:empty::before{content:"转换结果会显示在这里";color:var(--faint);}
+  #out .t-title{display:block;text-align:center;font-size:20px;font-weight:700;}
+  #out .t-h{display:block;font-weight:700;}
+  #out .t-b{font-weight:700;}
+  #out .t-tab{display:block;font-size:13px;color:var(--soft);padding:2px 0;}
+  footer{text-align:center;font-size:12px;color:var(--faint);}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink2);color:#fff;font-size:13px;padding:10px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:all .25s;z-index:20;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">‹ 工具集</a>
+<div class="wrap">
+  <header>
+    <svg class="ring" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="29.8" stroke="currentColor" stroke-width="4.9"/>
+      <path d="M50 38V60M41.5 51.5L50 60L58.5 51.5" stroke="currentColor" stroke-width="4.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>MD 转换</h1>
+    <p class="desc">粘贴 Markdown,去掉符号,导出排版好的 Word 文档。标题居中,小节标题加粗。</p>
+  </header>
+
+  <div class="card">
+    <div class="card-h"><span>Markdown</span><div class="acts"><button class="btn" id="paste" type="button">粘贴</button><button class="btn" id="clear" type="button">清空</button></div></div>
+    <textarea id="inp" placeholder="在此粘贴 Markdown 文本…" spellcheck="false"></textarea>
+  </div>
+
+  <button class="go" id="convert" type="button">转 换</button>
+
+  <div class="card">
+    <div class="card-h"><span>转换结果</span><div class="acts"><button class="btn" id="copy" type="button">复制</button><button class="btn dark" id="dl" type="button">导出 Word</button></div></div>
+    <div id="out"></div>
+  </div>
+
+  <footer>文本仅在本机浏览器处理,不会上传。</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const inp = $('inp'), out = $('out');
+let doc = null;           // 最近一次转换得到的结构化文档 {blocks:[...]}
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============ 解析 ============ */
+// 行内:返回 [{text, bold}],去掉 * _ ` 链接等标记,保留 **粗体** 信息
+function parseInline(s){
+  s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+       .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+       .replace(/`([^`]+)`/g, '$1')
+       .replace(/<\/?[a-zA-Z][^>]*>/g, '');
+  const runs = [];
+  const re = /(\*\*|__)(.+?)\1/g;
+  let last = 0, m;
+  const push = (t, bold) => {
+    t = t.replace(/\*+/g, '').replace(/(^|[^\w])_(.+?)_(?=[^\w]|$)/g, '$1$2');
+    if (t) runs.push({text: t, bold});
+  };
+  while ((m = re.exec(s))) {
+    if (m.index > last) push(s.slice(last, m.index), false);
+    push(m[2], true);
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) push(s.slice(last), false);
+  return runs;
+}
+const runsText = runs => runs.map(r => r.text).join('');
+const plain = s => runsText(parseInline(s));
+
+const isTableLine = l => { const t = l.trim(); return t.length > 1 && t[0] === '|' && t[t.length-1] === '|'; };
+const isDelim = l => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes('-');
+const splitRow = l => { let t = l.trim(); t = t.replace(/^\|/, '').replace(/\|$/, ''); return t.split('|').map(c => c.trim()); };
+
+// 一、二、 / （一） / 第X章节 等中文小节标题(无 # 号时也识别)
+const CN_HEAD = /^(?:[一二三四五六七八九十百]+[、.．]|[（(][一二三四五六七八九十百]+[）)]|第[一二三四五六七八九十百零\d]+[章节部分篇])/;
+
+function parse(md){
+  const lines = md.replace(/\r\n?/g, '\n').split('\n');
+  const blocks = [];
+  let inCode = false;
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    if (/^\s*```/.test(raw)) { inCode = !inCode; continue; }
+    if (inCode) { blocks.push({type:'para', runs:[{text: raw, bold:false}]}); continue; }
+    if (!raw.trim()) { blocks.push({type:'blank'}); continue; }
+    if (/^\s*([-*_=])(\s*\1){2,}\s*$/.test(raw)) continue;             // 分割线
+
+    // 表格:连续的 | ... | 行
+    if (isTableLine(raw)) {
+      const tl = [];
+      while (i < lines.length && isTableLine(lines[i])) { tl.push(lines[i]); i++; }
+      i--;
+      const hasDelim = tl.length > 1 && isDelim(tl[1]);
+      const rowsAll = tl.filter((l, k) => !(hasDelim && k === 1) && !(k > 0 && isDelim(l)))
+                        .map(l => splitRow(l).map(parseInline));
+      if (rowsAll.length) {
+        const cols = Math.max(...rowsAll.map(r => r.length));
+        rowsAll.forEach(r => { while (r.length < cols) r.push([]); });
+        blocks.push({type:'table', headers: rowsAll[0], rows: rowsAll.slice(1)});
+      }
+      continue;
+    }
+
+    let m = raw.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (m) { blocks.push({type:'heading', level: m[1].length, text: plain(m[2])}); continue; }
+
+    let line = raw.replace(/^\s*>+\s?/, '').replace(/^\s*[-+*]\s+/, '');
+    const runs = parseInline(line);
+    if (!runs.length) continue;
+    const text = runsText(runs).trim();
+    const allBold = runs.every(r => r.bold || !r.text.trim());
+    // 整行加粗的短句 / 中文序号短句 → 当作小节标题
+    if ((allBold && text.length <= 60) ||
+        (CN_HEAD.test(text) && text.length <= 36 && !/[。;;,,!?!?]$/.test(text))) {
+      blocks.push({type:'heading', level: 0, text}); // level 0 = 由正文推断出的小节标题
+      continue;
+    }
+    blocks.push({type:'para', runs});
+  }
+  // 去掉开头/结尾空行,合并连续空行
+  const res = [];
+  blocks.forEach(b => {
+    if (b.type === 'blank') { if (!res.length || res[res.length-1].type === 'blank') return; }
+    res.push(b);
+  });
+  while (res.length && res[res.length-1].type === 'blank') res.pop();
+
+  // 文档标题 = 第一个有内容的块,且为标题 → 居中
+  const first = res.find(b => b.type !== 'blank');
+  if (first && first.type === 'heading' && !CN_HEAD.test(first.text)) first.isTitle = true;
+  return {blocks: res};
+}
+
+/* ============ 预览 ============ */
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function renderPreview(d){
+  out.innerHTML = d.blocks.map(b => {
+    if (b.type === 'blank') return '\n';
+    if (b.type === 'heading') return `<span class="${b.isTitle ? 't-title' : 't-h'}">${esc(b.text)}</span>`;
+    if (b.type === 'table') return [b.headers, ...b.rows].map(r => `<span class="t-tab">${esc(r.map(runsText).join('  |  '))}</span>`).join('');
+    return b.runs.map(r => r.bold ? `<span class="t-b">${esc(r.text)}</span>` : esc(r.text)).join('') + '\n';
+  }).join('').replace(/\n{3,}/g, '\n\n');
+}
+function toPlain(d){
+  return d.blocks.map(b => {
+    if (b.type === 'blank') return '';
+    if (b.type === 'heading') return b.text;
+    if (b.type === 'table') return [b.headers, ...b.rows].map(r => r.map(runsText).join('\t')).join('\n');
+    return runsText(b.runs);
+  }).join('\n');
+}
+
+/* ============ Word ============ */
+const FONT = {ascii:'Calibri', hAnsi:'Calibri', eastAsia:'Microsoft YaHei'};
+const HEAD_PT = {0:14, 1:22, 2:16, 3:14, 4:13, 5:12, 6:12};  // 磅
+function border(){ return {style: docx.BorderStyle.SINGLE, size: 4, color: '999999'}; }
+function cell(runs, header){
+  return new docx.TableCell({
+    children:[ new docx.Paragraph({
+      alignment: header ? docx.AlignmentType.CENTER : docx.AlignmentType.LEFT,
+      children: runs.length ? runs.map(r => new docx.TextRun({text: r.text, bold: header || r.bold, size: 22, font: FONT})) : [new docx.TextRun({text:'', size: 22, font: FONT})]
+    }) ],
+    verticalAlign: docx.VerticalAlign.CENTER,
+    shading: header ? {fill:'F2F2F2'} : undefined,
+    margins: {top: 60, bottom: 60, left: 100, right: 100},
+    borders: {top: border(), bottom: border(), left: border(), right: border()}
+  });
+}
+function buildTable(b){
+  const rows = [new docx.TableRow({tableHeader:true, children: b.headers.map(h => cell(h, true))})];
+  b.rows.forEach(r => rows.push(new docx.TableRow({children: r.map(c => cell(c, false))})));
+  return new docx.Table({rows, width:{size:100, type: docx.WidthType.PERCENTAGE}});
+}
+function buildChildren(d){
+  const kids = [];
+  const HL = docx.HeadingLevel;
+  const LV = [HL.HEADING_3, HL.HEADING_1, HL.HEADING_2, HL.HEADING_3, HL.HEADING_4, HL.HEADING_5, HL.HEADING_6];
+  d.blocks.forEach(b => {
+    if (b.type === 'blank') { kids.push(new docx.Paragraph({})); return; }
+    if (b.type === 'table') { kids.push(buildTable(b)); kids.push(new docx.Paragraph({})); return; }
+    if (b.type === 'heading') {
+      kids.push(new docx.Paragraph({
+        heading: b.isTitle ? HL.TITLE : LV[b.level],
+        alignment: b.isTitle ? docx.AlignmentType.CENTER : docx.AlignmentType.LEFT,
+        spacing: b.isTitle ? {before: 120, after: 280} : {before: 280, after: 120},
+        keepNext: true,
+        children:[ new docx.TextRun({text: b.text, bold: true, color: '000000', font: FONT,
+          size: (b.isTitle ? Math.max(HEAD_PT[b.level] || 22, 22) : HEAD_PT[b.level]) * 2}) ]
+      }));
+      return;
+    }
+    kids.push(new docx.Paragraph({
+      spacing: {line: 360},
+      children: b.runs.map(r => new docx.TextRun({text: r.text, bold: r.bold, size: 24, font: FONT}))
+    }));
+  });
+  return kids;
+}
+function buildDocument(d){
+  return new docx.Document({
+    styles: {default: {document: {run: {font: FONT, size: 24, color: '000000'}}}},
+    sections: [{properties: {}, children: buildChildren(d)}]
+  });
+}
+
+/* ============ 交互 ============ */
+function run(){
+  const md = inp.value;
+  if (!md.trim()) { toast('请先粘贴 Markdown 文本'); return false; }
+  doc = parse(md);
+  renderPreview(doc);
+  const n = doc.blocks.filter(b => b.type === 'table').length;
+  toast(n ? `转换完成,含 ${n} 个表格` : '转换完成');
+  return true;
+}
+$('convert').onclick = run;
+$('paste').onclick = async () => {
+  try { inp.value = await navigator.clipboard.readText(); toast('已粘贴'); }
+  catch(e){ toast('无法读取剪贴板,请手动粘贴'); }
+};
+$('clear').onclick = () => { inp.value = ''; out.innerHTML = ''; doc = null; };
+$('copy').onclick = () => {
+  if (!doc) { toast('没有可复制的内容'); return; }
+  navigator.clipboard.writeText(toPlain(doc)).then(() => toast('已复制'), () => toast('复制失败,请手动复制'));
+};
+$('dl').onclick = () => {
+  if (!doc && !run()) return;
+  if (inp.value !== inp.dataset.last) { doc = parse(inp.value); renderPreview(doc); }
+  inp.dataset.last = inp.value;
+  try {
+    docx.Packer.toBlob(buildDocument(doc)).then(blob => {
+      const first = doc.blocks.find(b => b.type === 'heading' && b.isTitle);
+      const name = (first ? first.text.replace(/[\\/:*?"<>|]/g, '').slice(0, 40) : 'converted-document') || 'converted-document';
+      window.saveAs(blob, name + '.docx');
+      toast('Word 文件已导出');
+    }).catch(e => { console.error(e); toast('导出失败'); });
+  } catch(e){ console.error(e); toast('导出失败'); }
+};
+window.__mdc = {parse, buildDocument, toPlain};   // 便于调试
+})();
+</script>
+</body>
+</html>
