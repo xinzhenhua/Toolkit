@@ -101,13 +101,22 @@
   .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
   .toast button{background:none;border:0;color:#fff;text-decoration:underline;cursor:pointer;font-size:13px;}
 
-  @media (max-width:900px){
+  @media (max-width:760px){
     .layout{grid-template-columns:1fr;gap:20px;padding:14px 16px 40px;}
     .side{position:static;}
     .bar{padding:12px 16px 0;}
     .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;}
   }
 </style>
+<link rel="apple-touch-icon" href="icons/invoice.png">
+<link rel="icon" type="image/png" sizes="180x180" href="icons/invoice.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="发票合并">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<style>@supports(padding:max(0px)){.back{top:max(16px,env(safe-area-inset-top));left:max(18px,env(safe-area-inset-left))}}</style>
 </head>
 <body>
 
@@ -327,7 +336,7 @@ let hit = [];   // 当前页每个图片的 {id, x,y,w,h}(css px)
 function drawPreview(){
   const cv = $('pv'), stage = $('stage'), L = buildLayout();
   const maxW = Math.max(160, stage.clientWidth - 32);
-  const maxH = window.innerWidth <= 900 ? Math.max(200, Math.min(window.innerHeight * 0.4, 340)) : Math.max(220, Math.min(window.innerHeight * 0.58, 560));
+  const maxH = window.innerWidth <= 760 ? Math.max(200, Math.min(window.innerHeight * 0.4, 340)) : Math.max(220, Math.min(window.innerHeight * 0.58, 560));
   const sc = Math.min(maxW / L.pw, maxH / L.ph);
   const cssW = Math.round(L.pw * sc), cssH = Math.round(L.ph * sc), dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';

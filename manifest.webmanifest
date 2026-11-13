@@ -1,0 +1,16 @@
+{
+  "name": "工具集",
+  "short_name": "工具集",
+  "description": "盖盖、PDF 工具箱、MD 转换、发票合并、金额大写、含税换算",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    { "src": "icons/hub.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/hub-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/hub-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

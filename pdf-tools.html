@@ -119,8 +119,27 @@
   #w2p img{max-width:100%;height:auto;}
   #w2p ul,#w2p ol{margin:0 0 .6em 1.6em;}
   #w2p hr.pb{border:0;height:0;margin:0;}
-  @media (max-width:600px){.wrap{padding:56px 16px 64px}}
+  .fld{flex-wrap:wrap;}
+  .fld>span{white-space:nowrap;flex:none;}
+  .seg{border-radius:18px;}
+  @media (max-width:600px){
+    .wrap{padding:56px 16px 64px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+    .fi{gap:8px;padding:10px}.fi .hdl,.fi .idx{display:none}.fi .x{padding:4px 6px}.fi .th{width:36px;height:48px}.fi .mt{white-space:nowrap}
+    .card-b{padding:14px}.row{gap:10px 14px}
+    .btn.big{width:100%;max-width:340px}
+    .fileinfo .mt{width:100%}
+  }
 </style>
+<link rel="apple-touch-icon" href="icons/pdf-tools.png">
+<link rel="icon" type="image/png" sizes="180x180" href="icons/pdf-tools.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDF 工具箱">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<style>@supports(padding:max(0px)){.back{top:max(16px,env(safe-area-inset-top));left:max(18px,env(safe-area-inset-left))}}</style>
 </head>
 <body>
 <button class="back" id="back" type="button">‹ 工具集</button>
