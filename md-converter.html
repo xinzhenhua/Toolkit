@@ -6,8 +6,24 @@
 <title>Markdown 转换器</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230A0A0A'/%3E%3Ccircle cx='50' cy='50' r='29.8' stroke='%23fff' stroke-width='4.9' fill='none'/%3E%3Cpath d='M50 38V60M41.5 51.5L50 60L58.5 51.5' stroke='%23fff' stroke-width='4.9' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#FFFFFF">
-<script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<script>
+/* 非阻塞懒加载:页面先可用,库在后台按 jsdelivr → unpkg → cdnjs 依次尝试 */
+window.__L=(function(){
+  var C={},D={docx:{u:['https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js','https://unpkg.com/docx@7.8.2/build/index.js'],ok:function(){return window.docx}}};
+  function ld(u){return new Promise(function(res,rej){var s=document.createElement('script'),t=setTimeout(function(){s.remove();rej(new Error('timeout'))},12000);
+    s.src=u;s.onload=function(){clearTimeout(t);res()};s.onerror=function(){clearTimeout(t);s.remove();rej(new Error('error'))};document.head.appendChild(s);});}
+  return function(k){
+    if(C[k])return C[k];var d=D[k];
+    C[k]=(async function(){
+      if(d.ok())return;
+      for(var i=0;i<d.u.length;i++){try{await ld(d.u[i]);if(d.ok()){if(d.after)d.after(d.u[i]);return;}}catch(e){}}
+      delete C[k];throw new Error('组件加载失败,请检查网络后重试('+k+')');
+    })();
+    return C[k];
+  };
+})();
+window.addEventListener('load',function(){setTimeout(function(){__L('docx').catch(function(){})},50);});
+</script>
 <style>
   :root{--ink:#0A0A0A;--ink2:#111;--soft:#6B6B6B;--faint:#A3A3A3;--paper:#FFF;--shell:#F7F7F7;--line:#E6E6E6;}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -52,6 +68,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
 <style>@supports(padding:max(0px)){.back{top:max(16px,env(safe-area-inset-top));left:max(18px,env(safe-area-inset-left))}}</style>
+<style>@keyframes pgin{from{opacity:0}to{opacity:1}}body{animation:pgin .22s ease-out}@media (prefers-reduced-motion:reduce){body{animation:none}}</style>
 </head>
 <body>
 <a class="back" href="index.html">‹ 工具集</a>
@@ -274,7 +291,12 @@ $('copy').onclick = () => {
   if (!doc) { toast('没有可复制的内容'); return; }
   navigator.clipboard.writeText(toPlain(doc)).then(() => toast('已复制'), () => toast('复制失败,请手动复制'));
 };
-$('dl').onclick = () => {
+function saveBlob(blob,name){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},60000);
+}
+$('dl').onclick = async () => {
+  try { toast('正在准备导出组件…', 8000); await __L('docx'); } catch(e){ toast(e.message || '组件加载失败'); return; }
   if (!doc && !run()) return;
   if (inp.value !== inp.dataset.last) { doc = parse(inp.value); renderPreview(doc); }
   inp.dataset.last = inp.value;
@@ -282,7 +304,7 @@ $('dl').onclick = () => {
     docx.Packer.toBlob(buildDocument(doc)).then(blob => {
       const first = doc.blocks.find(b => b.type === 'heading' && b.isTitle);
       const name = (first ? first.text.replace(/[\\/:*?"<>|]/g, '').slice(0, 40) : 'converted-document') || 'converted-document';
-      window.saveAs(blob, name + '.docx');
+      saveBlob(blob, name + '.docx');
       toast('Word 文件已导出');
     }).catch(e => { console.error(e); toast('导出失败'); });
   } catch(e){ console.error(e); toast('导出失败'); }

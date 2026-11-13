@@ -5,9 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 编辑</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMEEwQTBBIi8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMjkuOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjQuOSIvPgogIDxwYXRoIGQ9Ik00MyAzOC41SDU3TTQzIDYxLjVINTdNNTAgMzguNVY2MS41IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iNC45IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script>
+/* 非阻塞懒加载:页面先可用,库在后台按 jsdelivr → unpkg → cdnjs 依次尝试 */
+window.__L=(function(){
+  var C={},D={pdfjs:{u:['https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js','https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js'],ok:function(){return window.pdfjsLib},after:function(u){window.pdfjsLib.GlobalWorkerOptions.workerSrc=u.replace('pdf.min.js','pdf.worker.min.js')}},pdflib:{u:['https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js','https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'],ok:function(){return window.PDFLib}},fontkit:{u:['https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js','https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js'],ok:function(){return window.fontkit}}};
+  function ld(u){return new Promise(function(res,rej){var s=document.createElement('script'),t=setTimeout(function(){s.remove();rej(new Error('timeout'))},12000);
+    s.src=u;s.onload=function(){clearTimeout(t);res()};s.onerror=function(){clearTimeout(t);s.remove();rej(new Error('error'))};document.head.appendChild(s);});}
+  return function(k){
+    if(C[k])return C[k];var d=D[k];
+    C[k]=(async function(){
+      if(d.ok())return;
+      for(var i=0;i<d.u.length;i++){try{await ld(d.u[i]);if(d.ok()){if(d.after)d.after(d.u[i]);return;}}catch(e){}}
+      delete C[k];throw new Error('组件加载失败,请检查网络后重试('+k+')');
+    })();
+    return C[k];
+  };
+})();
+window.addEventListener('load',function(){setTimeout(function(){__L('pdfjs').catch(function(){});__L('pdflib').catch(function(){});__L('fontkit').catch(function(){})},50);});
+</script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -481,6 +496,7 @@
 <meta name="apple-mobile-web-app-title" content="PDF 编辑">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
+<style>@keyframes pgin{from{opacity:0}to{opacity:1}}body{animation:pgin .22s ease-out}@media (prefers-reduced-motion:reduce){body{animation:none}}</style>
 </head>
 <body class="landing">
 <div class="landing-page" id="landingPage">
@@ -604,7 +620,6 @@
   const hintMessage = $('hintMessage');
   const fontStatusBadge = $('fontStatusBadge');
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
   // ==================== 字体：手动选项 & 预览字体栈 ====================
   const FAMILY_CSS = {
@@ -1475,6 +1490,7 @@
       const buf = new Uint8Array(await f.arrayBuffer());
       const tag = String.fromCharCode(buf[0], buf[1], buf[2], buf[3]);
       if (tag === 'ttcf') throw new Error('暂不支持 .ttc 字体集合，请换成单个 .ttf / .otf 文件');
+      await __L('fontkit');
       fontkit.create(buf);   // 校验能否解析
       customCjkBytes = buf; customCjkName = f.name;
       setBadge('✓ 自定义字体：' + f.name, 'ok');
@@ -1615,6 +1631,7 @@
 
   async function renderPdf(arrayBuffer) {
     try {
+      await __L('pdfjs');
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/cmaps/',
@@ -1743,6 +1760,7 @@
   });
 
   async function doExport() {
+    await Promise.all([__L('pdflib'), __L('fontkit')]);
     const { PDFDocument, rgb, StandardFonts, degrees } = PDFLib;
 
     const all = [];

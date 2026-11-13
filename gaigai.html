@@ -443,6 +443,7 @@
 <meta name="apple-mobile-web-app-title" content="盖盖">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
+<style>@keyframes pgin{from{opacity:0}to{opacity:1}}body{animation:pgin .22s ease-out}@media (prefers-reduced-motion:reduce){body{animation:none}}</style>
 </head>
 <body>
 
@@ -627,10 +628,24 @@
   <div class="toast" id="toast"></div>
 
   <!-- Libraries (loaded from CDN, run entirely in the browser; uploaded files are never sent anywhere) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script>
+/* 非阻塞懒加载:页面先可用,库在后台按 jsdelivr → unpkg → cdnjs 依次尝试 */
+window.__L=(function(){
+  var C={},D={pdfjs:{u:['https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js','https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'],ok:function(){return window['pdfjs-dist/build/pdf']},after:function(u){var p=window['pdfjs-dist/build/pdf'];p.GlobalWorkerOptions.workerSrc=u.replace('pdf.min.js','pdf.worker.min.js')}},pdflib:{u:['https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js','https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'],ok:function(){return window.PDFLib}},html2canvas:{u:['https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js','https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'],ok:function(){return window.html2canvas}},jspdf:{u:['https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@4.2.1/dist/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js'],ok:function(){return window.jspdf}}};
+  function ld(u){return new Promise(function(res,rej){var s=document.createElement('script'),t=setTimeout(function(){s.remove();rej(new Error('timeout'))},12000);
+    s.src=u;s.onload=function(){clearTimeout(t);res()};s.onerror=function(){clearTimeout(t);s.remove();rej(new Error('error'))};document.head.appendChild(s);});}
+  return function(k){
+    if(C[k])return C[k];var d=D[k];
+    C[k]=(async function(){
+      if(d.ok())return;
+      for(var i=0;i<d.u.length;i++){try{await ld(d.u[i]);if(d.ok()){if(d.after)d.after(d.u[i]);return;}}catch(e){}}
+      delete C[k];throw new Error('组件加载失败,请检查网络后重试('+k+')');
+    })();
+    return C[k];
+  };
+})();
+window.addEventListener('load',function(){setTimeout(function(){__L('pdfjs').catch(function(){});__L('pdflib').catch(function(){})},50);});
+</script>
 
 <script>
 'use strict';
@@ -1687,8 +1702,8 @@ async function loadPdf(file){
   state.pdfLibBytesForExport = buf2;
 
   if(!pdfjsLib){
+    await __L('pdfjs');
     pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buf1) });
   state.pdfjsDoc = await loadingTask.promise;
@@ -1809,6 +1824,7 @@ btnExport.addEventListener('click', async ()=>{
 });
 
 async function exportStampedPdf(filename){
+  await __L('pdflib');
   const { PDFDocument } = PDFLib;
   const pdfDoc = await PDFDocument.load(state.pdfLibBytesForExport);
   const pages = pdfDoc.getPages();
@@ -1887,6 +1903,7 @@ async function exportStampedPdf(filename){
 }
 
 async function exportFromHtml(filename, scalerEl){
+  await Promise.all([__L('html2canvas'), __L('jspdf')]);
   const EXPORT_SCALE = 2;
 
   // Render from a detached, unclipped, untransformed clone so that the

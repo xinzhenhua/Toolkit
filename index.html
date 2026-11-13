@@ -18,7 +18,14 @@
   .list{width:100%;max-width:960px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:4px;}
   .tool{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:20px 18px;border:1px solid var(--line);border-radius:16px;text-decoration:none;color:inherit;text-align:left;background:var(--paper);transition:all .18s;}
   .tool:hover{border-color:var(--ink);transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.08);}
-  .tool:active{transform:scale(.985);}
+  .tool{-webkit-tap-highlight-color:transparent;position:relative;}
+  .tool:active{transform:scale(.95);background:var(--shell);border-color:var(--ink);transition-duration:.08s;}
+  .tool.go{background:var(--ink);color:#fff;border-color:var(--ink);transform:scale(.97);}
+  .tool.go svg{color:#fff;}
+  .tool.go::after{content:"";position:absolute;right:14px;top:14px;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  body.leaving .tool:not(.go){opacity:.35;transition:opacity .2s;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pgin{from{opacity:0}to{opacity:1}}
   .tool svg{width:40px;height:40px;flex:none;color:var(--ink);}
   .tool b{display:block;font-size:16px;font-weight:600;letter-spacing:1px;}
   .tool span{display:block;font-size:13px;color:var(--soft);margin-top:3px;line-height:1.55;}
@@ -26,7 +33,7 @@
   .mark,.desc,.list,.note{opacity:0;animation:up .5s ease-out forwards;}
   .mark{animation-delay:.02s}.desc{animation-delay:.1s}.list{animation-delay:.18s}.note{animation-delay:.26s}
   @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  @media (prefers-reduced-motion:reduce){.mark,.desc,.list,.note{animation:none;opacity:1}}
+  @media (prefers-reduced-motion:reduce){.tool,.tool.go::after{transition:none;animation:none}.mark,.desc,.list,.note{animation:none;opacity:1}}
 </style>
 <link rel="apple-touch-icon" href="icons/hub.png">
 <link rel="icon" type="image/png" sizes="180x180" href="icons/hub.png">
@@ -76,5 +83,19 @@
     </a>
   </nav>
 </main>
+<script>
+(function(){
+  var ts=[].slice.call(document.querySelectorAll('a.tool'));
+  ts.forEach(function(a){
+    var l=document.createElement('link');l.rel='prefetch';l.href=a.getAttribute('href');document.head.appendChild(l);
+    a.addEventListener('click',function(e){
+      if(e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;
+      e.preventDefault();a.classList.add('go');document.body.classList.add('leaving');
+      setTimeout(function(){location.href=a.href;},140);
+    });
+  });
+  window.addEventListener('pageshow',function(){document.body.classList.remove('leaving');ts.forEach(function(a){a.classList.remove('go')});});
+})();
+</script>
 </body>
 </html>
